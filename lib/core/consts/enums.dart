@@ -1,0 +1,3 @@
+enum ScanResource{
+  camera, gallery
+}
