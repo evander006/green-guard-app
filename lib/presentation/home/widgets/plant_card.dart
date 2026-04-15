@@ -95,7 +95,7 @@ class PlantCardWidget extends StatelessWidget {
                   statColor, statLabelColor),
               const Spacer(),
               Text(
-                plant.imageEmoji,
+                plant.image,
                 style: const TextStyle(fontSize: 80, height: 1),
               ),
             ],

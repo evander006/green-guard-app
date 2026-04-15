@@ -7,8 +7,6 @@ import 'package:green_guard/presentation/auth/bloc/auth_bloc.dart';
 import 'package:green_guard/presentation/auth/bloc/auth_event.dart';
 import 'package:green_guard/presentation/auth/bloc/auth_state.dart';
 import 'package:green_guard/presentation/auth/widgets/auth_text_field.dart';
-import 'package:green_guard/presentation/home/pages/home_page.dart';
-
 
 class SignUpPage extends StatefulWidget {
   const SignUpPage({super.key});
@@ -61,7 +59,7 @@ class _SignUpPageState extends State<SignUpPage> {
     return BlocListener<AuthBloc, AuthState>(
       listener: (context, state) {
         if (state is AuthAuthenticated) {
-      context.go(AppRoutes.getFullPath(AppRoutes.home));  // '/root/home'
+          context.go(AppRoutes.home);
         } else if (state is AuthError) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text(state.message), backgroundColor: Colors.red),

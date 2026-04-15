@@ -1,5 +1,5 @@
+// lib/core/navigation/root_shell.dart
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 import 'package:go_router/go_router.dart';
 import 'package:green_guard/core/consts/app_theme.dart';
 import 'package:green_guard/core/navigation/app_routes.dart';
@@ -12,7 +12,6 @@ class RootShell extends StatefulWidget {
   State<RootShell> createState() => _RootShellState();
 }
 
-// lib/core/navigation/root_shell.dart
 class _RootShellState extends State<RootShell> {
   @override
   Widget build(BuildContext context) {
@@ -33,14 +32,12 @@ class _RootShellState extends State<RootShell> {
       Icons.eco_outlined,
       Icons.person_outline_rounded,
     ];
-    
-    // ✅ Map index to RELATIVE paths (combined with '/root' by GoRouter)
-    final relativePaths = [
-      AppRoutes.home,      // 'home'
-      AppRoutes.calendar,  // 'calendar'
-      AppRoutes.scanner,   // 'scanner'
-      AppRoutes.plants,    // 'plants'
-      AppRoutes.profile,   // 'profile'
+        final routes = [
+      AppRoutes.home,      // '/root/home'
+      AppRoutes.calendar,  // '/root/calendar'
+      AppRoutes.scanner,   // '/root/scanner'
+      AppRoutes.plants,    // '/root/plants'
+      AppRoutes.profile,   // '/root/profile'
     ];
     
     return Container(
@@ -56,10 +53,9 @@ class _RootShellState extends State<RootShell> {
           
           return GestureDetector(
             onTap: () {
-              // ✅ Navigate using FULL path
+              // ✅ Navigate using absolute path directly
               if (i != currentIndex) {
-                final fullPath = AppRoutes.getFullPath(relativePaths[i]);
-                context.go(fullPath);  // e.g., '/root/scanner'
+                context.go(routes[i]);  // e.g., '/root/scanner'
               }
             },
             child: AnimatedContainer(

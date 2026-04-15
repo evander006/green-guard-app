@@ -10,7 +10,7 @@ class PlantEntity extends Equatable {
   final double lightPercent;
   final double tempPercent;
   final double airQualityPercent;
-  final String imageEmoji;
+  final String image;
 
   const PlantEntity({
     required this.id,
@@ -21,7 +21,7 @@ class PlantEntity extends Equatable {
     required this.lightPercent,
     required this.tempPercent,
     required this.airQualityPercent,
-    required this.imageEmoji,
+    required this.image,
   });
 
   @override

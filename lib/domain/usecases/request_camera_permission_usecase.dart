@@ -45,3 +45,21 @@ class CaptureFromCameraUseCase {
     return scannerRepository.captureFromCamera();
   }
 }
+
+class OpenSettingsUseCase {
+  final ScannerRepository scannerRepository;
+
+  OpenSettingsUseCase(this.scannerRepository);
+  Future<void> call() async {
+    return scannerRepository.openSettings();
+  }
+}
+
+class DisposeUseCase {
+  final ScannerRepository scannerRepository;
+
+  DisposeUseCase(this.scannerRepository);
+  Future<void> call() async {
+    return scannerRepository.dispose();
+  }
+}

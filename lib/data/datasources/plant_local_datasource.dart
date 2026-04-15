@@ -18,7 +18,7 @@ class PlantLocalDatasourceImpl implements PlantLocalDatasource {
       lightPercent: 98,
       tempPercent: 22,
       airQualityPercent: 80,
-      imageEmoji: '🌿',
+      image: '🌿',
     ),
     const PlantEntity(
       id: '2',
@@ -29,7 +29,7 @@ class PlantLocalDatasourceImpl implements PlantLocalDatasource {
       lightPercent: 70,
       tempPercent: 35,
       airQualityPercent: 90,
-      imageEmoji: '🪴',
+      image: '🪴',
     ),
     const PlantEntity(
       id: '3',
@@ -40,7 +40,7 @@ class PlantLocalDatasourceImpl implements PlantLocalDatasource {
       lightPercent: 95,
       tempPercent: 60,
       airQualityPercent: 75,
-      imageEmoji: '🌵',
+      image: '🌵',
     ),
     const PlantEntity(
       id: '4',
@@ -51,7 +51,7 @@ class PlantLocalDatasourceImpl implements PlantLocalDatasource {
       lightPercent: 55,
       tempPercent: 28,
       airQualityPercent: 85,
-      imageEmoji: '🌸',
+      image: '🌸',
     ),
   ];
 
