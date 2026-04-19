@@ -1,12 +1,9 @@
-// lib/presentation/scanner/pages/scanner_page.dart
 import 'dart:async';
-import 'dart:io';
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:green_guard/core/consts/app_theme.dart';
-import 'package:green_guard/domain/entities/scanner_result_entity.dart';
 import 'package:green_guard/presentation/scanner/bloc/scanner_bloc.dart';
 import 'package:green_guard/presentation/scanner/bloc/scanner_event.dart';
 import 'package:green_guard/presentation/scanner/bloc/scanner_state.dart';
@@ -149,9 +146,7 @@ class _ScannerPageState extends State<ScannerPage> with WidgetsBindingObserver {
         camera,
         ResolutionPreset.medium,
         enableAudio: false,
-        imageFormatGroup: Platform.isIOS
-            ? ImageFormatGroup.jpeg
-            : ImageFormatGroup.yuv420,
+       
       );
 
       await _cameraController!.initialize();
@@ -349,7 +344,7 @@ class _ScannerPageState extends State<ScannerPage> with WidgetsBindingObserver {
     return BlocListener<ScannerBloc, ScannerState>(
       listener: (context, state) {
         if (state is ImageCaptured) {
-          _navigateToAnalysis(state.result);
+          _navigateToAnalysis(state.result.imagePath);
         } else if (state is ScannerError) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -750,7 +745,7 @@ class _ScannerPageState extends State<ScannerPage> with WidgetsBindingObserver {
     );
   }
 
-  void _navigateToAnalysis(ScannerResultEntity result) {
-    context.goNamed('plantCriteria');
+  void _navigateToAnalysis(String imgPath) {
+    context.goNamed('plantCriteria', extra: imgPath);
   }
 }

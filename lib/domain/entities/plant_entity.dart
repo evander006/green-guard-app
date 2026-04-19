@@ -1,4 +1,3 @@
-// lib/domain/entities/plant.dart
 import 'package:equatable/equatable.dart';
 
 class PlantEntity extends Equatable {

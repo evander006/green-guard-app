@@ -1,0 +1,1 @@
+const String PLANT_COLLECTION_REF = "plants";

@@ -13,7 +13,5 @@ class ScannerResultEntity {
     this.originalPath,
   });
   bool get isFromCamera => source == ScanResource.camera;
-
-  // Helper: Check if image is from gallery
   bool get isFromGallery => source == ScanResource.gallery;
 }

@@ -99,6 +99,10 @@ class AuthRemoteDatasourceImpl implements AuthRemoteDatasource {
       final UserCredential userCredential = await auth.signInWithCredential(
         credential,
       );
+      await prefs.setString(
+        AppConstants.authTokenKey,
+        'mock_token_${userCredential.user!.email.hashCode}',
+      );
 
       if (userCredential.user == null) {
         throw Exception('Google sign-in failed: no user returned');

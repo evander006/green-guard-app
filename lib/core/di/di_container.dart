@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:get_it/get_it.dart';
@@ -24,9 +25,11 @@ final sl = GetIt.instance;
 
 Future<void> init() async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  FirebaseFirestore.instance.settings = const Settings(persistenceEnabled: true);
   // External
   final prefs = await SharedPreferences.getInstance();
   sl.registerLazySingleton(() => prefs);
+  sl.registerLazySingleton<FirebaseFirestore>(()=> FirebaseFirestore.instance);
   sl.registerLazySingleton(() => FirebaseAuth.instance);
   sl.registerLazySingleton(() => GoogleSignIn());
   // Data sources
@@ -34,7 +37,10 @@ Future<void> init() async {
     () => AuthRemoteDatasourceImpl(sl(), sl(), sl()),
   );
   sl.registerLazySingleton<PlantLocalDatasource>(
-    () => PlantLocalDatasourceImpl(),
+    () => PlantLocalDatasourceImpl(
+      firestore: sl(),
+      auth:sl(),
+    ),
   );
   sl.registerLazySingleton<ScannerDatasource>(() => ScannerDatasourceImpl());
 
