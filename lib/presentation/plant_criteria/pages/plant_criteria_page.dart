@@ -1,12 +1,10 @@
-// lib/presentation/plants/pages/plant_criteria_page.dart
-import 'dart:io';
 import 'package:flutter/material.dart';
+import 'dart:io';
 import 'package:green_guard/presentation/plant_criteria/widgets/bottom_criteria_card.dart';
-import 'package:green_guard/presentation/plant_criteria/widgets/temperature_gauge.dart';
-import 'package:green_guard/presentation/plant_criteria/widgets/top_bar.dart';
+// ✅ Import the public helpers
 
 class PlantCriteriaPage extends StatefulWidget {
-  final String? imagePath; // ✅ Add this parameter
+  final String? imagePath;
 
   const PlantCriteriaPage({super.key, this.imagePath});
 
@@ -19,6 +17,10 @@ class _PlantCriteriaPageState extends State<PlantCriteriaPage> {
   late double _lightPercent;
   late double _tempPercent;
   late double _airQualityPercent;
+
+  // ✅ Track which slider is being dragged
+  String? _draggingSlider;
+
   late TextEditingController _nameController;
   late TextEditingController _subtitleController;
 
@@ -32,7 +34,6 @@ class _PlantCriteriaPageState extends State<PlantCriteriaPage> {
 
   @override
   void dispose() {
-    // ✅ Dispose controllers to prevent memory leaks
     _nameController.dispose();
     _subtitleController.dispose();
     super.dispose();
@@ -45,7 +46,6 @@ class _PlantCriteriaPageState extends State<PlantCriteriaPage> {
     _airQualityPercent = 80.0;
   }
 
-  // ✅ Properly closed method
   void _onSliderChanged(double value, String parameter) {
     setState(() {
       switch (parameter) {
@@ -63,6 +63,15 @@ class _PlantCriteriaPageState extends State<PlantCriteriaPage> {
           break;
       }
     });
+  }
+
+  // ✅ Drag callbacks for visual feedback
+  void _onSliderDragStart(String parameter) {
+    setState(() => _draggingSlider = parameter);
+  }
+
+  void _onSliderDragEnd(String parameter) {
+    setState(() => _draggingSlider = null);
   }
 
   @override
@@ -89,6 +98,7 @@ class _PlantCriteriaPageState extends State<PlantCriteriaPage> {
               ),
             ),
 
+          // Gradient Overlay
           Container(
             decoration: BoxDecoration(
               gradient: LinearGradient(
@@ -104,27 +114,161 @@ class _PlantCriteriaPageState extends State<PlantCriteriaPage> {
             ),
           ),
 
+          // Main Content
           SafeArea(
             child: Column(
               children: [
-                buildTopBar(context),
-                const SizedBox(height: 16),
-                buildTemperatureGauge(_tempPercent),
+                _buildTopBar(context),
+                const Spacer(),
+                _buildTemperatureGauge(_tempPercent),
                 const SizedBox(height: 16),
                 buildBottomCriteriaCard(
-                  context,
-                  _waterPercent,
-                  _lightPercent,
-                  _airQualityPercent,
-                  _tempPercent,
-                  _onSliderChanged,
-                  _nameController,
-                  _subtitleController,
+                  context: context,
+                  waterPercent: _waterPercent,
+                  lightPercent: _lightPercent,
+                  airQualityPercent: _airQualityPercent,
+                  tempPercent: _tempPercent,
+                  onSliderChanged: _onSliderChanged,
+                  nameController: _nameController,
+                  subtitleController: _subtitleController,
+                  onEditPressed: _openCriteriaEditor,
                 ),
               ],
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  void _openCriteriaEditor() {
+    // ✅ Call public helper with all state
+    showCriteriaEditor(
+      context: context,
+      waterPercent: _waterPercent,
+      lightPercent: _lightPercent,
+      airQualityPercent: _airQualityPercent,
+      onSliderChanged: _onSliderChanged,
+   
+    );
+  }
+
+  Widget _buildTopBar(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2),
+              shape: BoxShape.circle,
+            ),
+            child: IconButton(
+              icon: const Icon(Icons.arrow_back, color: Colors.white),
+              onPressed: () => Navigator.pop(context),
+            ),
+          ),
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.notifications_outlined,
+              color: Colors.white,
+              size: 22,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTemperatureGauge(double tempPercent) {
+    return Align(
+      alignment: Alignment.centerRight,
+      child: Container(
+        margin: const EdgeInsets.only(right: 20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 50,
+              height: 200,
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  begin: Alignment.bottomCenter,
+                  end: Alignment.topCenter,
+                  colors: [
+                    Color(0xFF2196F3),
+                    Color(0xFF4CAF50),
+                    Color(0xFFFFEB3B),
+                    Color(0xFFFF9800),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(25),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.2),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Stack(
+                children: [
+                  Positioned(
+                    bottom: tempPercent * 2,
+                    left: 0,
+                    right: 0,
+                    child: Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 8),
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(2),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.3),
+                            blurRadius: 4,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Text(
+                '${tempPercent.round()}°',
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF3A8A1A),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
