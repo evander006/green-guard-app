@@ -1,7 +1,13 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:green_guard/core/consts/app_theme.dart';
 import 'package:green_guard/core/di/di_container.dart';
+import 'package:green_guard/core/navigation/app_routes.dart';
+import 'package:green_guard/presentation/auth/bloc/auth_bloc.dart';
+import 'package:green_guard/presentation/auth/bloc/auth_event.dart';
+import 'package:green_guard/presentation/auth/bloc/auth_state.dart';
 import 'package:green_guard/presentation/home/bloc/home_bloc.dart';
 import 'package:green_guard/presentation/home/bloc/home_event.dart';
 import 'package:green_guard/presentation/home/bloc/home_state.dart';
@@ -48,7 +54,7 @@ class _HomeViewState extends State<_HomeView> {
             Expanded(
               child: CustomScrollView(
                 slivers: [
-                  //SliverToBoxAdapter(child: _buildHeader(context)),
+                  SliverToBoxAdapter(child: _buildHeader(context)),
                   SliverToBoxAdapter(child: _buildSearch()),
                   SliverToBoxAdapter(child: _buildCategories()),
                   _buildPlantList(),
@@ -62,61 +68,283 @@ class _HomeViewState extends State<_HomeView> {
     );
   }
 
-  // Widget _buildHeader(BuildContext context) {
-  //   return Padding(
-  //     padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
-  //     child: Row(
-  //       children: [
-  //         Container(
-  //           width: 44,
-  //           height: 44,
-  //           decoration: BoxDecoration(
-  //             shape: BoxShape.circle,
-  //             gradient: const LinearGradient(
-  //               colors: [Color(0xFFC8E6C9), Color(0xFF81C784)],
-  //               begin: Alignment.topLeft,
-  //               end: Alignment.bottomRight,
-  //             ),
-  //             border: Border.all(color: Colors.white, width: 2),
-  //           ),
-  //           child: const Center(
-  //             child: Text('A',
-  //                 style: TextStyle(
-  //                   fontSize: 17,
-  //                   fontWeight: FontWeight.w800,
-  //                   color: Color(0xFF2E7D32),
-  //                 )),
-  //           ),
-  //         ),
-  //         const SizedBox(width: 10),
-  //         Expanded(
-  //           child: BlocBuilder<AuthBloc, AuthState>(
-  //             builder: (context, state) {
-  //               final name = state is AuthAuthenticated ? state.user.name : 'Alex';
-  //               return Column(
-  //                 crossAxisAlignment: CrossAxisAlignment.start,
-  //                 children: [
-  //                   Text('Hi, $name',
-  //                       style: const TextStyle(
-  //                           fontSize: 15,
-  //                           fontWeight: FontWeight.w700,
-  //                           color: AppTheme.textDark)),
-  //                   const Text('Welcome back',
-  //                       style: TextStyle(fontSize: 12, color: AppTheme.textMuted)),
-  //                 ],
-  //               );
-  //             },
-  //           ),
-  //         ),
-  //         _circleButton(
-  //           onTap: () => context.read<AuthBloc>().add(AuthSignOutRequested()),
-  //           child: const Icon(Icons.notifications_outlined,
-  //               size: 20, color: AppTheme.textDark),
-  //         ),
-  //       ],
-  //     ),
-  //   );
-  // }
+  Widget _buildHeader(BuildContext context) {
+    return BlocBuilder<AuthBloc, AuthState>(
+      builder: (context, state) {
+        // ✅ Case 1: Initial/Loading State
+        if (state is AuthInitial || state is AuthLoading) {
+          return Padding(
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+            child: Row(
+              children: [
+                // Loading avatar
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.grey.shade200,
+                    border: Border.all(color: Colors.white, width: 2),
+                  ),
+                  child: const Center(
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        width: 100,
+                        height: 14,
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade300,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Container(
+                        width: 60,
+                        height: 10,
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade300,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                _circleButton(
+                  onTap: () {},
+                  child: const Icon(
+                    Icons.notifications_outlined,
+                    size: 20,
+                    color: AppTheme.textMuted,
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+
+        // ✅ Case 2: Authenticated - Show User Info
+        if (state is AuthAuthenticated) {
+          final user = FirebaseAuth.instance.currentUser;
+
+          return Padding(
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+            child: Row(
+              children: [
+                // Profile Photo or Icon
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFFC8E6C9), Color(0xFF81C784)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    border: Border.all(color: Colors.white, width: 2),
+                  ),
+                  child: user?.photoURL != null && user!.photoURL!.isNotEmpty
+                      ? ClipOval(
+                          child: Image.network(
+                            user.photoURL!,
+                            width: 44,
+                            height: 44,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return const Icon(
+                                Icons.person,
+                                size:
+                                    24, // ✅ Fixed: 50 was too big for 44x44 container
+                                color: Colors.grey,
+                              );
+                            },
+                            loadingBuilder: (context, child, loadingProgress) {
+                              if (loadingProgress == null) return child;
+                              return const Center(
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              );
+                            },
+                          ),
+                        )
+                      : const Icon(
+                          Icons.person,
+                          size: 24, // ✅ Fixed: 50 was too big
+                          color: Colors.white,
+                        ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Hi, ${user?.displayName ?? user?.email?.split('@').first ?? 'User'}',
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          color: AppTheme.textDark,
+                        ),
+                      ),
+                      const Text(
+                        'Welcome back',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: AppTheme.textMuted,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                _circleButton(
+                  onTap: () =>
+                      context.read<AuthBloc>().add(AuthSignOutRequested()),
+                  child: const Icon(
+                    Icons.notifications_outlined,
+                    size: 20,
+                    color: AppTheme.textDark,
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+
+        // ✅ Case 3: Unauthenticated - Show Guest/Login Prompt
+        if (state is AuthUnauthenticated) {
+          return Padding(
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+            child: Row(
+              children: [
+                // Guest avatar
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.grey.shade300,
+                    border: Border.all(color: Colors.white, width: 2),
+                  ),
+                  child: const Icon(
+                    Icons.person_outline,
+                    size: 24,
+                    color: Colors.grey,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Hi, Guest',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          color: AppTheme.textDark,
+                        ),
+                      ),
+                      GestureDetector(
+                        onTap: () => context.go(AppRoutes.signUp),
+                        child: const Text(
+                          'Sign in to continue',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: AppTheme.primary,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                _circleButton(
+                  onTap: () => context.go(AppRoutes.signUp),
+                  child: const Icon(
+                    Icons.login,
+                    size: 20,
+                    color: AppTheme.textDark,
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+
+        // ✅ Case 4: Error State
+        if (state is AuthError) {
+          return Padding(
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+            child: Row(
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.red.shade50,
+                    border: Border.all(color: Colors.white, width: 2),
+                  ),
+                  child: const Icon(
+                    Icons.error_outline,
+                    size: 24,
+                    color: Colors.red,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Error Loading Profile',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          color: AppTheme.textDark,
+                        ),
+                      ),
+                      GestureDetector(
+                        onTap: () =>
+                            context.read<AuthBloc>().add(AuthCheckRequested()),
+                        child: const Text(
+                          'Tap to retry',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: AppTheme.primary,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                _circleButton(
+                  onTap: () =>
+                      context.read<AuthBloc>().add(AuthCheckRequested()),
+                  child: const Icon(
+                    Icons.refresh,
+                    size: 20,
+                    color: AppTheme.textDark,
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+
+        // ✅ Default Fallback
+        return const SizedBox.shrink();
+      },
+    );
+  }
 
   Widget _buildSearch() {
     return Padding(

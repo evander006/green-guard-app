@@ -12,18 +12,26 @@ class GetPlantsUseCase {
 class AddPlantUseCase {
   final PlantRepository repository;
   AddPlantUseCase(this.repository);
-  Future<void> call(PlantEntity plantEntity) => repository.addPlant(plantEntity);
+  Future<void> call(PlantEntity plantEntity) =>
+      repository.addPlant(plantEntity);
 }
 
 class DeletePlantUseCase {
   final PlantRepository repository;
-  DeletePlantUseCase({required this.repository});
-  Future<void> deletePlant(PlantEntity plantEntity) =>
-      repository.deletePlant(plantEntity);
+  DeletePlantUseCase(this.repository);
+  Future<void> deletePlant(String plantId) => repository.deletePlant(plantId);
 }
 
 class GetPlantByIdUseCase {
   final PlantRepository repository;
-  GetPlantByIdUseCase({required this.repository});
+  GetPlantByIdUseCase(this.repository);
   Future<PlantEntity?> getPlantById(String id) => repository.getPlantById(id);
+}
+
+class WatchPlantsUseCase {
+  final PlantRepository repository;
+  WatchPlantsUseCase(this.repository);
+
+  Stream<List<PlantEntity>> call({String? category}) =>
+      repository.watchPlants(category: category);
 }

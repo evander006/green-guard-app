@@ -1,30 +1,53 @@
+// lib/data/datasources/plant_datasource.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:green_guard/data/models/plant_model.dart';
-import 'package:green_guard/domain/entities/plant_entity.dart';
+import '../../domain/entities/plant_entity.dart';
+import '../models/plant_model.dart';
 
-abstract class PlantLocalDatasource {
-  Future<void> addPlant(PlantModel plantModel);
-  Future<void> deletePlant(PlantModel plantModel);
+abstract class PlantDatasource {
+  Future<void> addPlant(PlantModel plant);
+  Future<void> deletePlant(String plantId);
   Future<List<PlantEntity>> getPlants({String? category});
   Future<PlantEntity?> getPlantById(String id);
+  Stream<List<PlantEntity>> watchPlants({String? category});
 }
 
-class PlantLocalDatasourceImpl implements PlantLocalDatasource {
+class PlantDatasourceImpl implements PlantDatasource {
   final FirebaseFirestore _firestore;
   final FirebaseAuth _auth;
 
-  PlantLocalDatasourceImpl({
+  PlantDatasourceImpl({
     required FirebaseFirestore firestore,
     required FirebaseAuth auth,
-  }) : _firestore = firestore,
-       _auth = auth;
+  })  : _firestore = firestore,
+        _auth = auth;
+
+  // ✅ User-specific plants collection
   CollectionReference<Map<String, dynamic>> get _plantsCollection {
     final user = _auth.currentUser;
-    if (user == null) {
-      throw Exception('User must be authenticated to access plants');
+    if (user == null) throw Exception('User not authenticated');
+    return _firestore
+        .collection('users')
+        .doc(user.uid)
+        .collection('plants');
+  }
+
+  @override
+  Future<void> addPlant(PlantModel plant) async {
+    try {
+      await _plantsCollection.doc(plant.id).set(plant.toFirestore());
+    } catch (e) {
+      throw Exception('Failed to add plant: ${e.toString()}');
     }
-    return _firestore.collection('users').doc(user.uid).collection('plants');
+  }
+
+  @override
+  Future<void> deletePlant(String plantId) async {
+    try {
+      await _plantsCollection.doc(plantId).delete();
+    } catch (e) {
+      throw Exception('Failed to delete plant: ${e.toString()}');
+    }
   }
 
   @override
@@ -35,9 +58,7 @@ class PlantLocalDatasourceImpl implements PlantLocalDatasource {
         query = query.where('category', isEqualTo: category);
       }
       final snapshot = await query.get();
-      return snapshot.docs
-          .map((doc) => PlantModel.fromJson(doc as Map<String, dynamic>))
-          .toList();
+      return snapshot.docs.map((doc) => PlantModel.fromFirestore(doc)).toList();
     } catch (e) {
       throw Exception('Failed to fetch plants: ${e.toString()}');
     }
@@ -48,39 +69,20 @@ class PlantLocalDatasourceImpl implements PlantLocalDatasource {
     try {
       final doc = await _plantsCollection.doc(id).get();
       if (!doc.exists) return null;
-      final data = doc.data() as Map<String, dynamic>;
-      return PlantModel(
-        id: id,
-        name: data['name'],
-        subtitle: data['subtitle'],
-        category: data['category'],
-        waterPercent: data['waterPercent'],
-        lightPercent: data['lightPercent'],
-        tempPercent: data['tempPercent'],
-        airQualityPercent: data['airQualityPercent'],
-        image: data['image'],
-      );
+      return PlantModel.fromFirestore(doc);
     } catch (e) {
       throw Exception('Failed to fetch plant: ${e.toString()}');
     }
   }
 
   @override
-  Future<void> addPlant(PlantModel plantModel) async {
-    try {
-      final plantData = plantModel.toJson();
-      await _plantsCollection.doc(plantModel.id).set(plantData);
-    } catch (e) {
-      throw Exception('Failed to add plant: ${e.toString()}');
+  Stream<List<PlantEntity>> watchPlants({String? category}) {
+    Query query = _plantsCollection.orderBy('createdAt', descending: true);
+    if (category != null && category != 'All') {
+      query = query.where('category', isEqualTo: category);
     }
-  }
-
-  @override
-  Future<void> deletePlant(PlantModel plantModel) async {
-    try {
-      await _plantsCollection.doc(plantModel.id).delete();
-    } catch (e) {
-      throw Exception('Failed to delete plant: ${e.toString()}');
-    }
+    return query.snapshots().map(
+      (snapshot) => snapshot.docs.map((doc) => PlantModel.fromFirestore(doc)).toList(),
+    );
   }
 }

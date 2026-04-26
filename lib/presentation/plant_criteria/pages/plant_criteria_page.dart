@@ -1,7 +1,17 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
+import 'package:green_guard/core/navigation/app_routes.dart';
+import 'package:green_guard/domain/entities/plant_entity.dart';
+import 'package:green_guard/presentation/plant_criteria/bloc/plant_bloc.dart';
+import 'package:green_guard/presentation/plant_criteria/bloc/plant_event.dart';
+import 'package:green_guard/presentation/plant_criteria/bloc/plant_state.dart';
 import 'dart:io';
 import 'package:green_guard/presentation/plant_criteria/widgets/bottom_criteria_card.dart';
-// ✅ Import the public helpers
+import 'package:green_guard/presentation/plant_criteria/widgets/temperature_gauge.dart';
+import 'package:green_guard/presentation/plant_criteria/widgets/top_bar.dart';
+import 'package:uuid/uuid.dart';
 
 class PlantCriteriaPage extends StatefulWidget {
   final String? imagePath;
@@ -18,11 +28,26 @@ class _PlantCriteriaPageState extends State<PlantCriteriaPage> {
   late double _tempPercent;
   late double _airQualityPercent;
 
-  // ✅ Track which slider is being dragged
-  String? _draggingSlider;
-
   late TextEditingController _nameController;
   late TextEditingController _subtitleController;
+  String _selectedCategory = 'Indoor';
+  final List<String> _categories = [
+    'Indoor',
+    'Outdoor',
+    'Succulent',
+    'Flowering',
+    'Fern',
+    'Palm',
+    'Cactus',
+    'Herb',
+  ];
+  bool _isSaving = false;
+
+  void _onCategoryChanged(String category) {
+    setState(() {
+      _selectedCategory = category;
+    });
+  }
 
   @override
   void initState() {
@@ -65,14 +90,7 @@ class _PlantCriteriaPageState extends State<PlantCriteriaPage> {
     });
   }
 
-  // ✅ Drag callbacks for visual feedback
-  void _onSliderDragStart(String parameter) {
-    setState(() => _draggingSlider = parameter);
-  }
-
-  void _onSliderDragEnd(String parameter) {
-    setState(() => _draggingSlider = null);
-  }
+  // lib/presentation/plant_criteria/pages/plant_criteria_page.dart
 
   @override
   Widget build(BuildContext context) {
@@ -81,195 +99,189 @@ class _PlantCriteriaPageState extends State<PlantCriteriaPage> {
       body: Stack(
         fit: StackFit.expand,
         children: [
-          // Plant Photo Background
+          // ✅ 1. BACKGROUND IMAGE (uncommented and fixed)
           if (widget.imagePath != null && widget.imagePath!.isNotEmpty)
-            Image.file(File(widget.imagePath!), fit: BoxFit.cover)
+            Positioned.fill(
+              child: Image.file(File(widget.imagePath!), fit: BoxFit.cover),
+            )
           else
-            Container(
-              decoration: const BoxDecoration(
+            Positioned.fill(
+              child: Container(
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [Color(0xFF1B5E20), Color(0xFF4CAF50)],
+                  ),
+                ),
+                child: const Center(
+                  child: Icon(Icons.eco, size: 120, color: Colors.white24),
+                ),
+              ),
+            ),
+
+          // ✅ 2. GRADIENT OVERLAY (uncommented)
+          Positioned.fill(
+            child: Container(
+              decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [Color(0xFF1B5E20), Color(0xFF4CAF50)],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.black.withOpacity(0.1),
+                    Colors.transparent,
+                    Colors.transparent,
+                    Colors.black.withOpacity(0.7),
+                  ],
+                  stops: const [0.0, 0.3, 0.7, 1.0],
                 ),
-              ),
-              child: const Center(
-                child: Icon(Icons.eco, size: 120, color: Colors.white24),
-              ),
-            ),
-
-          // Gradient Overlay
-          Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Colors.transparent,
-                  Colors.black.withOpacity(0.3),
-                  Colors.black.withOpacity(0.7),
-                ],
-                stops: const [0.4, 0.7, 1.0],
               ),
             ),
           ),
 
-          // Main Content
-          SafeArea(
-            child: Column(
-              children: [
-                _buildTopBar(context),
-                const Spacer(),
-                _buildTemperatureGauge(_tempPercent),
-                const SizedBox(height: 16),
-                buildBottomCriteriaCard(
-                  context: context,
-                  waterPercent: _waterPercent,
-                  lightPercent: _lightPercent,
-                  airQualityPercent: _airQualityPercent,
-                  tempPercent: _tempPercent,
-                  onSliderChanged: _onSliderChanged,
-                  nameController: _nameController,
-                  subtitleController: _subtitleController,
-                  onEditPressed: _openCriteriaEditor,
+          // ✅ 3. MAIN CONTENT (with BlocListener)
+          BlocListener<PlantBloc, PlantState>(
+            listener: (context, state) {
+              if (state is PlantSaved) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Row(
+                      children: [
+                        Icon(Icons.check_circle, color: Colors.white),
+                        SizedBox(width: 8),
+                        Text('Plant saved successfully! 🌿'),
+                      ],
+                    ),
+                    backgroundColor: Color(0xFF3A8A1A),
+                    behavior: SnackBarBehavior.floating,
+                    duration: Duration(seconds: 2),
+                  ),
+                );
+
+                context.go(AppRoutes.home);
+              }
+              if (state is PlantError) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Failed to save: ${state.message}'),
+                    backgroundColor: Colors.red,
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
+                setState(() {
+                  _isSaving = false;
+                });
+              }
+            },
+            child: SafeArea(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.only(bottom: 16),
+                child: Column(
+                  children: [
+                    buildTopBar(context),
+                    const SizedBox(height: 20),
+                    buildTemperatureGauge(_tempPercent),
+                    const SizedBox(height: 20),
+                    buildBottomCriteriaCard(
+                      context: context,
+                      waterPercent: _waterPercent,
+                      lightPercent: _lightPercent,
+                      airQualityPercent: _airQualityPercent,
+                      tempPercent: _tempPercent,
+                      onSliderChanged: _onSliderChanged,
+                      nameController: _nameController,
+                      subtitleController: _subtitleController,
+                      onEditPressed: _openCriteriaEditor,
+                      selectedCategory: _selectedCategory,
+                      categories: _categories,
+                      onCategoryChanged: _onCategoryChanged,
+                      onSavePressed: _savePlant,
+                      isSaving: _isSaving,
+                    ),
+                    const SizedBox(height: 24),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
+
+          // ✅ 4. LOADING OVERLAY (when saving)
+          if (_isSaving)
+            Positioned.fill(
+              child: Container(
+                color: Colors.black54,
+                child: Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const CircularProgressIndicator(color: Colors.white),
+                      const SizedBox(height: 16),
+                      const Text(
+                        'Saving plant...',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
     );
   }
 
   void _openCriteriaEditor() {
-    // ✅ Call public helper with all state
     showCriteriaEditor(
       context: context,
       waterPercent: _waterPercent,
       lightPercent: _lightPercent,
       airQualityPercent: _airQualityPercent,
       onSliderChanged: _onSliderChanged,
-   
     );
   }
 
-  Widget _buildTopBar(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
-              shape: BoxShape.circle,
-            ),
-            child: IconButton(
-              icon: const Icon(Icons.arrow_back, color: Colors.white),
-              onPressed: () => Navigator.pop(context),
-            ),
-          ),
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(
-              Icons.notifications_outlined,
-              color: Colors.white,
-              size: 22,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTemperatureGauge(double tempPercent) {
-    return Align(
-      alignment: Alignment.centerRight,
-      child: Container(
-        margin: const EdgeInsets.only(right: 20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 50,
-              height: 200,
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  begin: Alignment.bottomCenter,
-                  end: Alignment.topCenter,
-                  colors: [
-                    Color(0xFF2196F3),
-                    Color(0xFF4CAF50),
-                    Color(0xFFFFEB3B),
-                    Color(0xFFFF9800),
-                  ],
-                ),
-                borderRadius: BorderRadius.circular(25),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.2),
-                    blurRadius: 8,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Stack(
-                children: [
-                  Positioned(
-                    bottom: tempPercent * 2,
-                    left: 0,
-                    right: 0,
-                    child: Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 8),
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(2),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.3),
-                            blurRadius: 4,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Text(
-                '${tempPercent.round()}°',
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF3A8A1A),
-                ),
-              ),
-            ),
-          ],
+  Future<void> _savePlant() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please sign in to save plants'),
+          backgroundColor: Colors.red,
         ),
-      ),
+      );
+      return;
+    }
+    if (_nameController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please enter a plant name'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+    setState(() {
+      _isSaving = true;
+    });
+    final plantToSave = PlantEntity(
+      id: const Uuid().v4(),
+      userId: user.uid,
+      name: _nameController.text.trim(),
+      subtitle: _subtitleController.text.trim(),
+      category: _selectedCategory,
+      waterPercent: _waterPercent,
+      lightPercent: _lightPercent,
+      tempPercent: _tempPercent,
+      airQualityPercent: _airQualityPercent,
+      image: widget.imagePath ?? '',
+      createdAt: DateTime.now(),
     );
+    if (mounted) {
+      context.read<PlantBloc>().add(AddPlantRequested(plant: plantToSave));
+    }
   }
 }

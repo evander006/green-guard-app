@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:green_guard/core/navigation/app_router.dart';
 import 'package:green_guard/presentation/auth/bloc/auth_bloc.dart';
 import 'package:green_guard/presentation/auth/bloc/auth_event.dart';
+import 'package:green_guard/presentation/plant_criteria/bloc/plant_bloc.dart';
 import 'package:green_guard/presentation/scanner/bloc/scanner_bloc.dart';
 import 'core/di/di_container.dart' as di;
 
@@ -12,21 +13,24 @@ void main() async {
   await di.init();
   final authBloc = di.sl<AuthBloc>()..add(AuthCheckRequested());
   final scannerBloc = di.sl<ScannerBloc>();
+  final plantBloc = di.sl<PlantBloc>();
   final router = AppRouter.createRouter(authBloc: authBloc);
-  runApp(MyApp(authBloc: authBloc, router: router, scannerBloc: scannerBloc));
+  runApp(MyApp(authBloc: authBloc, router: router, scannerBloc: scannerBloc, plantBloc: plantBloc));
 }
 
 class MyApp extends StatelessWidget {
   final AuthBloc authBloc;
   final ScannerBloc scannerBloc;
+  final PlantBloc plantBloc;
   final GoRouter router;
-  const MyApp({super.key, required this.authBloc, required this.router, required this.scannerBloc});
+  const MyApp({super.key, required this.authBloc, required this.router, required this.scannerBloc, required this.plantBloc});
   @override
   Widget build(BuildContext context) {
     return MultiBlocProvider(
       providers: [
         BlocProvider(create: (context) =>authBloc),
         BlocProvider(create: (context) => scannerBloc),
+        BlocProvider(create: (context) => plantBloc)
       ],
       child: MaterialApp.router(
         routerConfig: router,

@@ -5,8 +5,27 @@ import '../../domain/repositories/plant_repository.dart';
 import '../datasources/plant_local_datasource.dart';
 
 class PlantRepositoryImpl implements PlantRepository {
-  final PlantLocalDatasource datasource;
+  final PlantDatasource datasource;
+
   PlantRepositoryImpl(this.datasource);
+
+  @override
+  Future<void> addPlant(PlantEntity plant) async {
+    final model = PlantModel(
+      id: plant.id,
+      userId: plant.userId,
+      name: plant.name,
+      subtitle: plant.subtitle,
+      category: plant.category,
+      waterPercent: plant.waterPercent,
+      lightPercent: plant.lightPercent,
+      tempPercent: plant.tempPercent,
+      airQualityPercent: plant.airQualityPercent,
+      image: plant.image,
+      createdAt: plant.createdAt,
+    );
+    await datasource.addPlant(model);
+  }
 
   @override
   Future<List<PlantEntity>> getPlants({String? category}) =>
@@ -16,34 +35,9 @@ class PlantRepositoryImpl implements PlantRepository {
   Future<PlantEntity?> getPlantById(String id) => datasource.getPlantById(id);
 
   @override
-  Future<void> addPlant(PlantEntity plantEntity) async {
-    await datasource.addPlant(
-      PlantModel(
-        id: plantEntity.id,
-        name: plantEntity.name,
-        subtitle: plantEntity.subtitle,
-        category: plantEntity.category,
-        waterPercent: plantEntity.waterPercent,
-        lightPercent: plantEntity.lightPercent,
-        tempPercent: plantEntity.tempPercent,
-        airQualityPercent: plantEntity.airQualityPercent,
-        image: plantEntity.image,
-      ),
-    );
-  }
+  Stream<List<PlantEntity>> watchPlants({String? category}) =>
+      datasource.watchPlants(category: category);
 
   @override
-  Future<void> deletePlant(PlantEntity plantEntity) async {
-    await datasource.deletePlant(PlantModel(
-        id: plantEntity.id,
-        name: plantEntity.name,
-        subtitle: plantEntity.subtitle,
-        category: plantEntity.category,
-        waterPercent: plantEntity.waterPercent,
-        lightPercent: plantEntity.lightPercent,
-        tempPercent: plantEntity.tempPercent,
-        airQualityPercent: plantEntity.airQualityPercent,
-        image: plantEntity.image,
-      ),);
-  }
+  Future<void> deletePlant(String plantId) => datasource.deletePlant(plantId);
 }

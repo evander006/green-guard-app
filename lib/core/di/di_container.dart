@@ -11,12 +11,13 @@ import 'package:green_guard/data/repositories/scanner_repository_impl.dart';
 import 'package:green_guard/domain/repositories/auth_repository.dart';
 import 'package:green_guard/domain/repositories/plant_repository.dart';
 import 'package:green_guard/domain/repositories/scanner_repository.dart';
-import 'package:green_guard/domain/usecases/get_plants_usecase.dart';
+import 'package:green_guard/domain/usecases/plants_usecase.dart';
 import 'package:green_guard/domain/usecases/request_camera_permission_usecase.dart';
 import 'package:green_guard/domain/usecases/sign_in_usecase.dart';
 import 'package:green_guard/firebase_options.dart';
 import 'package:green_guard/presentation/auth/bloc/auth_bloc.dart';
 import 'package:green_guard/presentation/home/bloc/home_bloc.dart';
+import 'package:green_guard/presentation/plant_criteria/bloc/plant_bloc.dart';
 import 'package:green_guard/presentation/scanner/bloc/scanner_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../data/datasources/auth_remote_datasource.dart';
@@ -25,29 +26,30 @@ final sl = GetIt.instance;
 
 Future<void> init() async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  FirebaseFirestore.instance.settings = const Settings(persistenceEnabled: true);
+  FirebaseFirestore.instance.settings = const Settings(
+    persistenceEnabled: true,
+  );
   // External
   final prefs = await SharedPreferences.getInstance();
   sl.registerLazySingleton(() => prefs);
-  sl.registerLazySingleton<FirebaseFirestore>(()=> FirebaseFirestore.instance);
+  sl.registerLazySingleton<FirebaseFirestore>(() => FirebaseFirestore.instance);
   sl.registerLazySingleton(() => FirebaseAuth.instance);
   sl.registerLazySingleton(() => GoogleSignIn());
   // Data sources
   sl.registerLazySingleton<AuthRemoteDatasource>(
     () => AuthRemoteDatasourceImpl(sl(), sl(), sl()),
   );
-  sl.registerLazySingleton<PlantLocalDatasource>(
-    () => PlantLocalDatasourceImpl(
-      firestore: sl(),
-      auth:sl(),
-    ),
+  sl.registerLazySingleton<PlantDatasource>(
+    () => PlantDatasourceImpl(firestore: sl(), auth: sl()),
   );
   sl.registerLazySingleton<ScannerDatasource>(() => ScannerDatasourceImpl());
 
   // Repositories
   sl.registerLazySingleton<AuthRepository>(() => AuthRepositoryImpl(sl()));
   sl.registerLazySingleton<PlantRepository>(() => PlantRepositoryImpl(sl()));
-  sl.registerLazySingleton<ScannerRepository>(()=>ScannerRepositoryImpl(sl()));
+  sl.registerLazySingleton<ScannerRepository>(
+    () => ScannerRepositoryImpl(sl()),
+  );
   // Use cases
   sl.registerLazySingleton(() => SignInUseCase(sl()));
   sl.registerLazySingleton(() => SignUpUseCase(sl()));
@@ -64,6 +66,12 @@ Future<void> init() async {
   sl.registerLazySingleton(() => CaptureFromCameraUseCase(sl()));
   sl.registerLazySingleton(() => OpenSettingsUseCase(sl()));
   sl.registerLazySingleton(() => DisposeUseCase(sl()));
+
+ 
+  sl.registerLazySingleton(() => AddPlantUseCase(sl()));
+  sl.registerLazySingleton(() => DeletePlantUseCase(sl()));
+  sl.registerLazySingleton(() => GetPlantByIdUseCase(sl()));
+  sl.registerLazySingleton(() => WatchPlantsUseCase(sl()));
 
   // BLoCs (factory = new instance each time)
   sl.registerFactory(
@@ -86,5 +94,8 @@ Future<void> init() async {
       openSettingsUseCase: sl(),
       disposeUseCase: sl(),
     ),
+  );
+  sl.registerLazySingleton(
+    () => PlantBloc(addPlantUseCase: sl(), watchPlantsUseCase: sl()),
   );
 }

@@ -11,7 +11,6 @@ class AppTheme {
   static const Color textDark = Color(0xFF1A1A2E);
   static const Color textMuted = Color(0xFF8A9B8A);
   static const Color chipBg = Color(0xFFF5F5F5);
-
   static ThemeData get light => ThemeData(
     useMaterial3: true,
     scaffoldBackgroundColor: background,

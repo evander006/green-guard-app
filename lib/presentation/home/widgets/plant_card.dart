@@ -1,18 +1,15 @@
 // lib/presentation/home/widgets/plant_card.dart
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:green_guard/core/consts/app_theme.dart';
 import 'package:green_guard/domain/entities/plant_entity.dart';
-
 
 class PlantCardWidget extends StatelessWidget {
   final PlantEntity plant;
   final bool isGreen;
 
-  const PlantCardWidget({
-    super.key,
-    required this.plant,
-    this.isGreen = false,
-  });
+  const PlantCardWidget({super.key, required this.plant, this.isGreen = false});
 
   @override
   Widget build(BuildContext context) {
@@ -28,8 +25,9 @@ class PlantCardWidget extends StatelessWidget {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: (isGreen ? AppTheme.primary : Colors.black)
-                .withOpacity(isGreen ? 0.25 : 0.06),
+            color: (isGreen ? AppTheme.primary : Colors.black).withOpacity(
+              isGreen ? 0.25 : 0.06,
+            ),
             blurRadius: 16,
             offset: const Offset(0, 4),
           ),
@@ -45,24 +43,26 @@ class PlantCardWidget extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    if (!isGreen)
-                      Container(
-                        margin: const EdgeInsets.only(bottom: 8),
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFDFF2D1),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: const Text(
-                          '✦ Featured',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                            color: Color(0xFF3A8A1A),
-                          ),
-                        ),
-                      ),
+                    // if (!isGreen)
+                    //   Container(
+                    //     margin: const EdgeInsets.only(bottom: 8),
+                    //     padding: const EdgeInsets.symmetric(
+                    //       horizontal: 10,
+                    //       vertical: 4,
+                    //     ),
+                    //     decoration: BoxDecoration(
+                    //       color: const Color(0xFFDFF2D1),
+                    //       borderRadius: BorderRadius.circular(20),
+                    //     ),
+                    //     child: const Text(
+                    //       '✦ Featured',
+                    //       style: TextStyle(
+                    //         fontSize: 11,
+                    //         fontWeight: FontWeight.w700,
+                    //         color: Color(0xFF3A8A1A),
+                    //       ),
+                    //     ),
+                    //   ),
                     Text(
                       plant.name,
                       style: TextStyle(
@@ -85,19 +85,51 @@ class PlantCardWidget extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 16),
+
           Row(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              _stat('${plant.waterPercent.toInt()}%', 'Water',
-                  statColor, statLabelColor),
-              const SizedBox(width: 20),
-              _stat('${plant.lightPercent.toInt()}%', 'Lights',
-                  statColor, statLabelColor),
-              const Spacer(),
-              Text(
-                plant.image,
-                style: const TextStyle(fontSize: 80, height: 1),
+              _stat(
+                '${plant.waterPercent.toInt()}%',
+                'Water',
+                statColor,
+                statLabelColor,
               ),
+              const SizedBox(width: 20),
+              _stat(
+                '${plant.lightPercent.toInt()}%',
+                'Lights',
+                statColor,
+                statLabelColor,
+              ),
+              const Spacer(),
+              // ✅ FIX: Show actual image or placeholder icon
+              if (plant.image.isNotEmpty && File(plant.image).existsSync())
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Image.file(
+                    File(plant.image),
+                    width: 60,
+                    height: 60,
+                    fit: BoxFit.cover,
+                  ),
+                )
+              else
+                Container(
+                  width: 60,
+                  height: 60,
+                  decoration: BoxDecoration(
+                    color: isGreen
+                        ? Colors.white.withOpacity(0.2)
+                        : Colors.grey.shade200,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    Icons.eco,
+                    size: 30,
+                    color: isGreen ? Colors.white70 : Colors.grey,
+                  ),
+                ),
             ],
           ),
         ],
@@ -109,9 +141,14 @@ class PlantCardWidget extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(val,
-            style: TextStyle(
-                fontSize: 22, fontWeight: FontWeight.w800, color: valColor)),
+        Text(
+          val,
+          style: TextStyle(
+            fontSize: 22,
+            fontWeight: FontWeight.w800,
+            color: valColor,
+          ),
+        ),
         const SizedBox(height: 2),
         Text(label, style: TextStyle(fontSize: 12, color: lblColor)),
       ],

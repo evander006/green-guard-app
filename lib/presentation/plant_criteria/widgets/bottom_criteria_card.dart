@@ -1,8 +1,6 @@
-// ✅ Remove underscores to make functions PUBLIC
 import 'package:flutter/material.dart';
 import 'package:green_guard/core/consts/app_theme.dart';
 
-// ✅ PUBLIC: Can be imported from other files
 Widget buildBottomCriteriaCard({
   required BuildContext context,
   required double waterPercent,
@@ -12,19 +10,24 @@ Widget buildBottomCriteriaCard({
   required Function(double, String) onSliderChanged,
   required TextEditingController nameController,
   required TextEditingController subtitleController,
-  required VoidCallback onEditPressed, // ✅ Callback for edit button
+  required VoidCallback onEditPressed,
+  required String selectedCategory,
+  required List<String> categories,
+  required Function(String) onCategoryChanged,
+  required VoidCallback onSavePressed,
+  required bool isSaving,
 }) {
   return Container(
-    margin: const EdgeInsets.all(20),
-    padding: const EdgeInsets.all(24),
+    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+    padding: const EdgeInsets.all(16),
     decoration: BoxDecoration(
       color: Colors.white.withOpacity(0.95),
-      borderRadius: BorderRadius.circular(24),
+      borderRadius: BorderRadius.circular(20),
       boxShadow: [
         BoxShadow(
-          color: Colors.black.withOpacity(0.2),
-          blurRadius: 20,
-          offset: const Offset(0, 10),
+          color: Colors.black.withOpacity(0.15),
+          blurRadius: 12,
+          offset: const Offset(0, 4),
         ),
       ],
     ),
@@ -32,108 +35,192 @@ Widget buildBottomCriteriaCard({
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        TextField(
-          controller: nameController,
-          style: const TextStyle(
-            fontSize: 28,
-            fontWeight: FontWeight.w800,
-            color: AppTheme.textDark,
-          ),
-          decoration: InputDecoration(
-            hintText: 'Plant Name',
-            hintStyle: const TextStyle(
-              fontSize: 28,
-              fontWeight: FontWeight.w800,
-              color: AppTheme.textMuted,
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Expanded(
+              child: TextField(
+                controller: nameController,
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                  color: AppTheme.textDark,
+                ),
+                decoration: InputDecoration(
+                  hintText: 'Plant Name',
+                  hintStyle: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                    color: AppTheme.textMuted,
+                  ),
+                  border: InputBorder.none,
+                  isDense: true,
+                  contentPadding: EdgeInsets.zero,
+                ),
+              ),
             ),
-            border: InputBorder.none,
-            isDense: true,
-            contentPadding: EdgeInsets.zero,
-          ),
+            const SizedBox(width: 8),
+            // ✅ Compact dropdown
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 120),
+              child: DropdownButtonHideUnderline(
+                child: DropdownButton<String>(
+                  value: selectedCategory.isEmpty ? null : selectedCategory,
+                  isDense: true,
+                  isExpanded: true,
+                  items: categories.map((String category) {
+                    return DropdownMenuItem<String>(
+                      value: category,
+                      child: Text(
+                        category,
+                        style: const TextStyle(fontSize: 13),
+                      ),
+                    );
+                  }).toList(),
+                  onChanged: (String? newValue) {
+                    if (newValue != null) onCategoryChanged(newValue);
+                  },
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: AppTheme.textMuted,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  icon: const Icon(Icons.arrow_drop_down, size: 18),
+                ),
+              ),
+            ),
+          ],
         ),
-        const SizedBox(height: 4),
         TextField(
           controller: subtitleController,
           style: const TextStyle(
-            fontSize: 18,
+            fontSize: 14, // ✅ Reduced from 18
             color: AppTheme.textMuted,
-            fontWeight: FontWeight.w500,
           ),
           decoration: InputDecoration(
             hintText: 'e.g., Indoor Plant',
             hintStyle: TextStyle(
-              fontSize: 18,
-              color: AppTheme.textMuted.withOpacity(0.6),
-              fontWeight: FontWeight.w500,
+              fontSize: 14,
+              color: AppTheme.textMuted.withOpacity(0.7),
             ),
             border: InputBorder.none,
             isDense: true,
             contentPadding: EdgeInsets.zero,
           ),
         ),
-        const SizedBox(height: 20),
+
+        const SizedBox(height: 12),
         Row(
           children: [
             Expanded(
-              child: buildMetricCard(
-                // ✅ Public function
+              child: _buildCompactMetricCard(
                 icon: Icons.water_drop,
                 iconColor: Colors.blue,
-                label: 'Water Level',
+                label: 'Water',
                 value: '${waterPercent.round()}%',
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 8),
             Expanded(
-              child: buildMetricCard(
+              child: _buildCompactMetricCard(
                 icon: Icons.wb_sunny,
                 iconColor: Colors.orange,
                 label: 'Light',
                 value: '${lightPercent.round()}%',
               ),
             ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        Row(
-          children: [
+            const SizedBox(width: 8),
             Expanded(
-              child: buildMetricCard(
+              child: _buildCompactMetricCard(
                 icon: Icons.air,
                 iconColor: Colors.green,
-                label: 'Air Quality',
+                label: 'Air',
                 value: '${airQualityPercent.round()}%',
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 8),
             Expanded(
-              child: buildMetricCard(
+              child: _buildCompactMetricCard(
                 icon: Icons.thermostat,
                 iconColor: Colors.red,
-                label: 'Temperature',
-                value: '${tempPercent.round()}°C',
+                label: 'Temp',
+                value: '${tempPercent.round()}°',
               ),
             ),
           ],
         ),
-        const SizedBox(height: 20),
+
+        const SizedBox(height: 12),
         SizedBox(
           width: double.infinity,
           child: ElevatedButton(
-            onPressed: onEditPressed, // ✅ Use callback
+            onPressed: onEditPressed,
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF3A8A1A),
               foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 16),
+              padding: const EdgeInsets.symmetric(vertical: 12),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(12),
               ),
               elevation: 0,
             ),
             child: const Text(
-              'Edit Care Criteria',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+              'Edit Criteria',
+              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
             ),
+          ),
+        ),
+        const SizedBox(height: 12),
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton(
+            onPressed: isSaving ? null : onSavePressed, 
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF3A8A1A),
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              elevation: 0,
+              disabledBackgroundColor: Colors.grey.shade400,
+            ),
+            child: isSaving
+                ? const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2.5,
+                        ),
+                      ),
+                      SizedBox(width: 8),
+                      Text(
+                        'Saving...',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  )
+                : const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.save_alt, size: 20),
+                      SizedBox(width: 8),
+                      Text(
+                        'Save Plant',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
           ),
         ),
       ],
@@ -141,31 +228,38 @@ Widget buildBottomCriteriaCard({
   );
 }
 
-// ✅ PUBLIC metric card widget
-Widget buildMetricCard({
+// ✅ New compact metric card widget
+Widget _buildCompactMetricCard({
   required IconData icon,
   required Color iconColor,
   required String label,
   required String value,
 }) {
   return Container(
-    padding: const EdgeInsets.all(16),
+    padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
     decoration: BoxDecoration(
       color: Colors.grey.shade50,
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(12),
     ),
     child: Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, color: iconColor, size: 28),
-        const SizedBox(height: 8),
-        Text(
-          value,
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
-        ),
+        Icon(icon, color: iconColor, size: 20), // ✅ Smaller icon
         const SizedBox(height: 4),
         Text(
+          value,
+          style: const TextStyle(
+            fontSize: 14, // ✅ Reduced from 18
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
           label,
-          style: TextStyle(fontSize: 12, color: AppTheme.textMuted),
+          style: TextStyle(
+            fontSize: 10, // ✅ Reduced from 12
+            color: AppTheme.textMuted,
+          ),
           textAlign: TextAlign.center,
         ),
       ],
@@ -173,7 +267,6 @@ Widget buildMetricCard({
   );
 }
 
-// ✅ PUBLIC: Show criteria editor modal
 void showCriteriaEditor({
   required BuildContext context,
   required double waterPercent,
@@ -181,7 +274,6 @@ void showCriteriaEditor({
   required double airQualityPercent,
   required Function(double, String) onSliderChanged,
 }) {
-  // Local copies that live inside the sheet
   double localWater = waterPercent;
   double localLight = lightPercent;
   double localAir = airQualityPercent;
@@ -227,8 +319,8 @@ void showCriteriaEditor({
                       onDragEnd: () =>
                           setSheetState(() => draggingSlider = null),
                       onChanged: (v) {
-                        setSheetState(() => localWater = v); // updates sheet UI
-                        onSliderChanged(v, 'water'); // updates page state
+                        setSheetState(() => localWater = v);
+                        onSliderChanged(v, 'water');
                       },
                     ),
                     const SizedBox(height: 16),

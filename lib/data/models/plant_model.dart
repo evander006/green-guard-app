@@ -1,8 +1,12 @@
 import 'package:green_guard/domain/entities/plant_entity.dart';
 
+// lib/data/models/plant_model.dart
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class PlantModel extends PlantEntity {
   const PlantModel({
     required super.id,
+    required super.userId,
     required super.name,
     required super.subtitle,
     required super.category,
@@ -11,47 +15,32 @@ class PlantModel extends PlantEntity {
     required super.tempPercent,
     required super.airQualityPercent,
     required super.image,
+    super.createdAt,
   });
-  factory PlantModel.fromJson(Map<String, dynamic> json) {
+
+  //Firestore → PlantModel
+  factory PlantModel.fromFirestore(DocumentSnapshot doc) {
+    final data = doc.data() as Map<String, dynamic>;
     return PlantModel(
-      id: json['id'],
-      name: json['name'],
-      subtitle: json['subtitle'],
-      category: json['category'],
-      waterPercent: json['waterPercent'],
-      lightPercent: json['lightPercent'],
-      tempPercent: json['tempPercent'],
-      airQualityPercent: json['airQualityPercent'],
-      image: json['image'],
-    );
-  }
-  PlantModel copying({
-    String? id,
-    String? name,
-    String? subtitle,
-    String? category,
-    double? waterPercent,
-    double? lightPercent,
-    double? tempPercent,
-    double? airQualityPercent,
-    String? image,
-  }) {
-    return PlantModel(
-      id: id ?? this.id,
-      name: name ?? this.name,
-      subtitle: subtitle ?? this.subtitle,
-      category: category ?? this.category,
-      waterPercent: waterPercent ?? this.waterPercent,
-      lightPercent: lightPercent ?? this.lightPercent,
-      tempPercent: tempPercent ?? this.tempPercent,
-      airQualityPercent: airQualityPercent ?? this.airQualityPercent,
-      image: image ?? this.image,
+      id: data['id'] ?? doc.id,
+      userId: data['userId'] ?? '',
+      name: data['name'] ?? '',
+      subtitle: data['subtitle'] ?? '',
+      category: data['category'] ?? '',
+      waterPercent: (data['waterPercent'] ?? 0).toDouble(),
+      lightPercent: (data['lightPercent'] ?? 0).toDouble(),
+      tempPercent: (data['tempPercent'] ?? 0).toDouble(),
+      airQualityPercent: (data['airQualityPercent'] ?? 0).toDouble(),
+      image: data['image'] ?? '',
+      createdAt: (data['createdAt'] as Timestamp?)?.toDate(),
     );
   }
 
-  Map<String, dynamic> toJson() {
+  // PlantModel → Firestore
+  Map<String, dynamic> toFirestore() {
     return {
       'id': id,
+      'userId': userId,
       'name': name,
       'subtitle': subtitle,
       'category': category,
@@ -60,6 +49,9 @@ class PlantModel extends PlantEntity {
       'tempPercent': tempPercent,
       'airQualityPercent': airQualityPercent,
       'image': image,
+      'createdAt': createdAt != null 
+          ? Timestamp.fromDate(createdAt!) 
+          : FieldValue.serverTimestamp(),
     };
   }
 }

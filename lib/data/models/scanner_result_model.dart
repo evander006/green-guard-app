@@ -1,10 +1,9 @@
 // lib/data/models/scanner_result_model.dart
 import 'package:green_guard/core/consts/enums.dart';
-
 import '../../domain/entities/scanner_result_entity.dart';
 
 class ScannerResultModel extends ScannerResultEntity {
-  final String? originalPath; // Original path before copying
+  final String? originalPath;
 
   ScannerResultModel({
     required super.imagePath,

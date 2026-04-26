@@ -50,7 +50,6 @@ class _SignUpPageState extends State<SignUpPage> {
     _passwordCtrl.clear();
     _confirmCtrl.clear();
 
-    // Trigger Google Sign-In via BLoC
     context.read<AuthBloc>().add(AuthGoogleSignInRequested());
   }
 

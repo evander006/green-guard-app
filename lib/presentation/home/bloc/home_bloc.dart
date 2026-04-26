@@ -1,7 +1,7 @@
 // lib/presentation/home/bloc/home_bloc.dart
 
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:green_guard/domain/usecases/get_plants_usecase.dart';
+import 'package:green_guard/domain/usecases/plants_usecase.dart';
 import 'package:green_guard/presentation/home/bloc/home_event.dart';
 import 'package:green_guard/presentation/home/bloc/home_state.dart';
 
