@@ -7,13 +7,12 @@ abstract class AppRoutes {
   static const String home = '/root/home';
   static const String calendar = '/root/calendar';
   static const String scanner = '/root/scanner';
-  static const String plants = '/root/plants';
   static const String profile = '/root/profile';
   static const String plantCriteria = '/plant-ctiteria';
   static const String plantDetails = '/plant-details';
 
   static String getRouteByIndex(int index) {
-    const routes = [home, calendar, scanner, plants, profile];
+    const routes = [home, calendar, scanner, profile];
     return routes[index];
   }
 
@@ -22,8 +21,7 @@ abstract class AppRoutes {
     if (path == home) return 0;
     if (path == calendar) return 1;
     if (path == scanner) return 2;
-    if (path == plants) return 3;
-    if (path == profile) return 4;
+    if (path == profile) return 3;
     return 0;
   }
 }

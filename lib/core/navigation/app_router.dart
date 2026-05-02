@@ -11,7 +11,6 @@ import 'package:green_guard/presentation/auth/pages/sign_up_page.dart';
 import 'package:green_guard/presentation/calendar/calendar_page.dart';
 import 'package:green_guard/presentation/home/pages/home_page.dart';
 import 'package:green_guard/presentation/plant_criteria/pages/plant_criteria_page.dart';
-import 'package:green_guard/presentation/plants/pages/plants_page.dart';
 import 'package:green_guard/presentation/profile/profile_page.dart';
 import 'package:green_guard/presentation/scanner/pages/scanner_page.dart';
 
@@ -78,12 +77,12 @@ class AppRouter {
               pageBuilder: (context, state) =>
                   const NoTransitionPage(child: ScannerPage()),
             ),
-            GoRoute(
-              path: AppRoutes.plants,
-              name: 'rootPlants',
-              pageBuilder: (context, state) =>
-                  const NoTransitionPage(child: PlantsPage()),
-            ),
+            // GoRoute(
+            //   path: AppRoutes.plants,
+            //   name: 'rootPlants',
+            //   pageBuilder: (context, state) =>
+            //       const NoTransitionPage(child: PlantsPage()),
+            // ),
             GoRoute(
               path: AppRoutes.profile,
               name: 'rootProfile',

@@ -29,14 +29,12 @@ class _RootShellState extends State<RootShell> {
       Icons.home_rounded,
       Icons.calendar_today_outlined,
       Icons.camera_alt_outlined,
-      Icons.eco_outlined,
       Icons.person_outline_rounded,
     ];
         final routes = [
       AppRoutes.home,      // '/root/home'
       AppRoutes.calendar,  // '/root/calendar'
       AppRoutes.scanner,   // '/root/scanner'
-      AppRoutes.plants,    // '/root/plants'
       AppRoutes.profile,   // '/root/profile'
     ];
     
