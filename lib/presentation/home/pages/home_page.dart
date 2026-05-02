@@ -511,7 +511,7 @@ class _HomeViewState extends State<_HomeView> {
               final plant = state.plants[i];
               return Padding(
                 padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
-                child: PlantCardWidget(plant: plant, isGreen: i % 2 == 1),
+                child: PlantCardWidget(plant: plant, isGreen: i % 2 == 1, onTap:(){context.go('/plant-details', extra: plant);}),
               );
             }, childCount: state.plants.length),
           );

@@ -9,6 +9,7 @@ import 'package:green_guard/presentation/plant_criteria/bloc/plant_event.dart';
 import 'package:green_guard/presentation/plant_criteria/bloc/plant_state.dart';
 import 'dart:io';
 import 'package:green_guard/presentation/plant_criteria/widgets/bottom_criteria_card.dart';
+import 'package:green_guard/presentation/plant_criteria/widgets/show_criteria_editor.dart';
 import 'package:green_guard/presentation/plant_criteria/widgets/temperature_gauge.dart';
 import 'package:green_guard/presentation/plant_criteria/widgets/top_bar.dart';
 import 'package:uuid/uuid.dart';
@@ -27,6 +28,9 @@ class _PlantCriteriaPageState extends State<PlantCriteriaPage> {
   late double _lightPercent;
   late double _tempPercent;
   late double _airQualityPercent;
+  bool _reminderEnabled = false;
+  TimeOfDay? _reminderTime;
+  WateringFrequency? _frequency;
 
   late TextEditingController _nameController;
   late TextEditingController _subtitleController;
@@ -46,6 +50,26 @@ class _PlantCriteriaPageState extends State<PlantCriteriaPage> {
   void _onCategoryChanged(String category) {
     setState(() {
       _selectedCategory = category;
+    });
+  }
+
+  void _onReminderToggle(bool value) {
+    setState(() {
+      _reminderEnabled = value;
+      if (value && _reminderTime == null) {
+        _reminderTime = const TimeOfDay(hour: 9, minute: 0);
+      }
+    });
+  }
+
+  void _onReminderTimeChanged(TimeOfDay time) {
+    setState(() => _reminderTime = time);
+  }
+
+  void _onFrequencyChanged(WateringFrequency value) {
+    setState(() {
+      _frequency = value;
+      _frequency ??= WateringFrequency.daily;
     });
   }
 
@@ -90,8 +114,6 @@ class _PlantCriteriaPageState extends State<PlantCriteriaPage> {
     });
   }
 
-  // lib/presentation/plant_criteria/pages/plant_criteria_page.dart
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -99,7 +121,6 @@ class _PlantCriteriaPageState extends State<PlantCriteriaPage> {
       body: Stack(
         fit: StackFit.expand,
         children: [
-          // ✅ 1. BACKGROUND IMAGE (uncommented and fixed)
           if (widget.imagePath != null && widget.imagePath!.isNotEmpty)
             Positioned.fill(
               child: Image.file(File(widget.imagePath!), fit: BoxFit.cover),
@@ -120,7 +141,6 @@ class _PlantCriteriaPageState extends State<PlantCriteriaPage> {
               ),
             ),
 
-          // ✅ 2. GRADIENT OVERLAY (uncommented)
           Positioned.fill(
             child: Container(
               decoration: BoxDecoration(
@@ -139,7 +159,6 @@ class _PlantCriteriaPageState extends State<PlantCriteriaPage> {
             ),
           ),
 
-          // ✅ 3. MAIN CONTENT (with BlocListener)
           BlocListener<PlantBloc, PlantState>(
             listener: (context, state) {
               if (state is PlantSaved) {
@@ -197,6 +216,12 @@ class _PlantCriteriaPageState extends State<PlantCriteriaPage> {
                       onCategoryChanged: _onCategoryChanged,
                       onSavePressed: _savePlant,
                       isSaving: _isSaving,
+                      reminderEnabled: _reminderEnabled,
+                      reminderTime: _reminderTime,
+                      onReminderToggle: _onReminderToggle,
+                      onReminderTimeChanged: _onReminderTimeChanged,
+                      frequency: _frequency,
+                      onFrequencyChanged: _onFrequencyChanged,
                     ),
                     const SizedBox(height: 24),
                   ],
@@ -204,8 +229,6 @@ class _PlantCriteriaPageState extends State<PlantCriteriaPage> {
               ),
             ),
           ),
-
-          // ✅ 4. LOADING OVERLAY (when saving)
           if (_isSaving)
             Positioned.fill(
               child: Container(
@@ -278,7 +301,11 @@ class _PlantCriteriaPageState extends State<PlantCriteriaPage> {
       tempPercent: _tempPercent,
       airQualityPercent: _airQualityPercent,
       image: widget.imagePath ?? '',
+      reminderEnabled: _reminderEnabled,
+      reminderTime: _reminderTime,
       createdAt: DateTime.now(),
+      frequency: _frequency ?? WateringFrequency.every3Days
+      
     );
     if (mounted) {
       context.read<PlantBloc>().add(AddPlantRequested(plant: plantToSave));

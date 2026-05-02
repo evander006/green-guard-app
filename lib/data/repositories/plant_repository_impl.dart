@@ -22,6 +22,9 @@ class PlantRepositoryImpl implements PlantRepository {
       tempPercent: plant.tempPercent,
       airQualityPercent: plant.airQualityPercent,
       image: plant.image,
+      reminderEnabled: plant.reminderEnabled,
+      reminderTime: plant.reminderTime,
+      frequency: plant.frequency,
       createdAt: plant.createdAt,
     );
     await datasource.addPlant(model);

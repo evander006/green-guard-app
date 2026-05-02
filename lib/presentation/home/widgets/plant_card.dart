@@ -8,8 +8,9 @@ import 'package:green_guard/domain/entities/plant_entity.dart';
 class PlantCardWidget extends StatelessWidget {
   final PlantEntity plant;
   final bool isGreen;
+  final VoidCallback? onTap;
 
-  const PlantCardWidget({super.key, required this.plant, this.isGreen = false});
+  const PlantCardWidget({super.key, required this.plant, this.isGreen = false, this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -19,120 +20,123 @@ class PlantCardWidget extends StatelessWidget {
     final statColor = isGreen ? Colors.white : AppTheme.textDark;
     final statLabelColor = isGreen ? Colors.white70 : AppTheme.textMuted;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: (isGreen ? AppTheme.primary : Colors.black).withOpacity(
-              isGreen ? 0.25 : 0.06,
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        decoration: BoxDecoration(
+          color: bg,
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [
+            BoxShadow(
+              color: (isGreen ? AppTheme.primary : Colors.black).withOpacity(
+                isGreen ? 0.25 : 0.06,
+              ),
+              blurRadius: 16,
+              offset: const Offset(0, 4),
             ),
-            blurRadius: 16,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // if (!isGreen)
-                    //   Container(
-                    //     margin: const EdgeInsets.only(bottom: 8),
-                    //     padding: const EdgeInsets.symmetric(
-                    //       horizontal: 10,
-                    //       vertical: 4,
-                    //     ),
-                    //     decoration: BoxDecoration(
-                    //       color: const Color(0xFFDFF2D1),
-                    //       borderRadius: BorderRadius.circular(20),
-                    //     ),
-                    //     child: const Text(
-                    //       '✦ Featured',
-                    //       style: TextStyle(
-                    //         fontSize: 11,
-                    //         fontWeight: FontWeight.w700,
-                    //         color: Color(0xFF3A8A1A),
-                    //       ),
-                    //     ),
-                    //   ),
-                    Text(
-                      plant.name,
-                      style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w800,
-                        color: textColor,
-                        letterSpacing: -0.3,
-                        height: 1.1,
+          ],
+        ),
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // if (!isGreen)
+                      //   Container(
+                      //     margin: const EdgeInsets.only(bottom: 8),
+                      //     padding: const EdgeInsets.symmetric(
+                      //       horizontal: 10,
+                      //       vertical: 4,
+                      //     ),
+                      //     decoration: BoxDecoration(
+                      //       color: const Color(0xFFDFF2D1),
+                      //       borderRadius: BorderRadius.circular(20),
+                      //     ),
+                      //     child: const Text(
+                      //       '✦ Featured',
+                      //       style: TextStyle(
+                      //         fontSize: 11,
+                      //         fontWeight: FontWeight.w700,
+                      //         color: Color(0xFF3A8A1A),
+                      //       ),
+                      //     ),
+                      //   ),
+                      Text(
+                        plant.name,
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w800,
+                          color: textColor,
+                          letterSpacing: -0.3,
+                          height: 1.1,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      plant.subtitle,
-                      style: TextStyle(fontSize: 14, color: subColor),
-                    ),
-                  ],
+                      const SizedBox(height: 3),
+                      Text(
+                        plant.subtitle,
+                        style: TextStyle(fontSize: 14, color: subColor),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              _arrowButton(isGreen),
-            ],
-          ),
-          const SizedBox(height: 16),
-
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              _stat(
-                '${plant.waterPercent.toInt()}%',
-                'Water',
-                statColor,
-                statLabelColor,
-              ),
-              const SizedBox(width: 20),
-              _stat(
-                '${plant.lightPercent.toInt()}%',
-                'Lights',
-                statColor,
-                statLabelColor,
-              ),
-              const Spacer(),
-              // ✅ FIX: Show actual image or placeholder icon
-              if (plant.image.isNotEmpty && File(plant.image).existsSync())
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: Image.file(
-                    File(plant.image),
+                _arrowButton(isGreen),
+              ],
+            ),
+            const SizedBox(height: 16),
+      
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                _stat(
+                  '${plant.waterPercent.toInt()}%',
+                  'Water',
+                  statColor,
+                  statLabelColor,
+                ),
+                const SizedBox(width: 20),
+                _stat(
+                  '${plant.lightPercent.toInt()}%',
+                  'Lights',
+                  statColor,
+                  statLabelColor,
+                ),
+                const Spacer(),
+                // ✅ FIX: Show actual image or placeholder icon
+                if (plant.image.isNotEmpty && File(plant.image).existsSync())
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: Image.file(
+                      File(plant.image),
+                      width: 60,
+                      height: 60,
+                      fit: BoxFit.cover,
+                    ),
+                  )
+                else
+                  Container(
                     width: 60,
                     height: 60,
-                    fit: BoxFit.cover,
+                    decoration: BoxDecoration(
+                      color: isGreen
+                          ? Colors.white.withOpacity(0.2)
+                          : Colors.grey.shade200,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(
+                      Icons.eco,
+                      size: 30,
+                      color: isGreen ? Colors.white70 : Colors.grey,
+                    ),
                   ),
-                )
-              else
-                Container(
-                  width: 60,
-                  height: 60,
-                  decoration: BoxDecoration(
-                    color: isGreen
-                        ? Colors.white.withOpacity(0.2)
-                        : Colors.grey.shade200,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(
-                    Icons.eco,
-                    size: 30,
-                    color: isGreen ? Colors.white70 : Colors.grey,
-                  ),
-                ),
-            ],
-          ),
-        ],
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

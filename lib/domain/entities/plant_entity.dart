@@ -1,6 +1,13 @@
 import 'package:equatable/equatable.dart';
+import 'package:flutter/material.dart';
 
-// lib/domain/entities/plant_entity.dart
+enum WateringFrequency {
+  daily,
+  every2Days,
+  every3Days,
+  weekly,
+}
+
 class PlantEntity extends Equatable {
   final String id;
   final String userId;
@@ -13,6 +20,11 @@ class PlantEntity extends Equatable {
   final double airQualityPercent;
   final String image;
   final DateTime? createdAt;
+  final bool reminderEnabled;
+  final TimeOfDay? reminderTime;
+  final WateringFrequency frequency;
+  final DateTime? lastWatered;
+  final DateTime? nextWatering;
 
   const PlantEntity({
     required this.id,
@@ -26,8 +38,17 @@ class PlantEntity extends Equatable {
     required this.airQualityPercent,
     required this.image,
     this.createdAt,
+    this.reminderEnabled = false,
+    this.reminderTime,
+    this.frequency = WateringFrequency.every3Days,
+    this.lastWatered,
+    this.nextWatering,
   });
 
   @override
-  List<Object?> get props => [id, userId];
+  List<Object?> get props => [
+    id, userId, name, subtitle, category,
+    waterPercent, lightPercent, tempPercent, airQualityPercent, image,
+    createdAt, reminderEnabled, reminderTime, frequency, lastWatered, nextWatering,
+  ];
 }

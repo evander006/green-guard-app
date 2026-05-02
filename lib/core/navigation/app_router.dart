@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:green_guard/core/navigation/app_routes.dart';
 import 'package:green_guard/core/navigation/root_shell.dart';
+import 'package:green_guard/domain/entities/plant_entity.dart';
+import 'package:green_guard/presentation/about_plant/pages/about_plant_page.dart';
 import 'package:green_guard/presentation/auth/bloc/auth_bloc.dart';
 import 'package:green_guard/presentation/auth/bloc/auth_state.dart';
 import 'package:green_guard/presentation/auth/pages/sign_up_page.dart';
@@ -48,7 +50,13 @@ class AppRouter {
             final img=state.extra as String?;
             return PlantCriteriaPage(imagePath: img,);},
         ),
-
+        GoRoute(
+          path: AppRoutes.plantDetails, // '/sign-up' ✓
+          name: 'plantDetails',
+          builder: (context, state) { 
+            final plant=state.extra as PlantEntity?;
+            return PlantDetailsPage(plant: plant!);},
+        ),
         ShellRoute(
           builder: (context, state, child) => RootShell(child: child),
           routes: [
