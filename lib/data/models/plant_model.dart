@@ -85,9 +85,6 @@ class PlantModel extends PlantEntity {
     return TimeOfDay(hour: hour, minute: minute);
   }
 
-  static String _frequencyToFirestore(WateringFrequency frequency) {
-    return frequency.name; // 'daily', 'every2Days', etc.
-  }
 
   static WateringFrequency _frequencyFromFirestore(dynamic data) {
     if (data == null || data is! String) return WateringFrequency.every3Days;

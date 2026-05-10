@@ -10,6 +10,7 @@ abstract class PlantDatasource {
   Future<List<PlantEntity>> getPlants({String? category});
   Future<PlantEntity?> getPlantById(String id);
   Stream<List<PlantEntity>> watchPlants({String? category});
+  Future<void> updatePlant(PlantModel plant);
 }
 
 class PlantDatasourceImpl implements PlantDatasource {
@@ -19,17 +20,14 @@ class PlantDatasourceImpl implements PlantDatasource {
   PlantDatasourceImpl({
     required FirebaseFirestore firestore,
     required FirebaseAuth auth,
-  })  : _firestore = firestore,
-        _auth = auth;
+  }) : _firestore = firestore,
+       _auth = auth;
 
   // ✅ User-specific plants collection
   CollectionReference<Map<String, dynamic>> get _plantsCollection {
     final user = _auth.currentUser;
     if (user == null) throw Exception('User not authenticated');
-    return _firestore
-        .collection('users')
-        .doc(user.uid)
-        .collection('plants');
+    return _firestore.collection('users').doc(user.uid).collection('plants');
   }
 
   @override
@@ -53,7 +51,7 @@ class PlantDatasourceImpl implements PlantDatasource {
   @override
   Future<List<PlantEntity>> getPlants({String? category}) async {
     try {
-      Query query = _plantsCollection.orderBy('createdAt', descending: true);
+      Query query = _plantsCollection;
       if (category != null && category != 'All') {
         query = query.where('category', isEqualTo: category);
       }
@@ -82,7 +80,17 @@ class PlantDatasourceImpl implements PlantDatasource {
       query = query.where('category', isEqualTo: category);
     }
     return query.snapshots().map(
-      (snapshot) => snapshot.docs.map((doc) => PlantModel.fromFirestore(doc)).toList(),
+      (snapshot) =>
+          snapshot.docs.map((doc) => PlantModel.fromFirestore(doc)).toList(),
     );
+  }
+
+  @override
+  Future<void> updatePlant(PlantModel plant) async {
+    try {
+      await _plantsCollection.doc(plant.id).update(plant.toFirestore());
+    } catch (e) {
+      throw Exception('Failed to update plant: ${e.toString()}');
+    }
   }
 }

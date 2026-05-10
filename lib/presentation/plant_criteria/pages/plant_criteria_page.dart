@@ -30,7 +30,7 @@ class _PlantCriteriaPageState extends State<PlantCriteriaPage> {
   late double _airQualityPercent;
   bool _reminderEnabled = false;
   TimeOfDay? _reminderTime;
-  WateringFrequency? _frequency;
+  WateringFrequency _frequency = WateringFrequency.every3Days;
 
   late TextEditingController _nameController;
   late TextEditingController _subtitleController;
@@ -69,7 +69,6 @@ class _PlantCriteriaPageState extends State<PlantCriteriaPage> {
   void _onFrequencyChanged(WateringFrequency value) {
     setState(() {
       _frequency = value;
-      _frequency ??= WateringFrequency.daily;
     });
   }
 
@@ -267,48 +266,79 @@ class _PlantCriteriaPageState extends State<PlantCriteriaPage> {
     );
   }
 
-  Future<void> _savePlant() async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please sign in to save plants'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
-    }
-    if (_nameController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please enter a plant name'),
-          backgroundColor: Colors.orange,
-        ),
-      );
-      return;
-    }
-    setState(() {
-      _isSaving = true;
-    });
-    final plantToSave = PlantEntity(
-      id: const Uuid().v4(),
-      userId: user.uid,
-      name: _nameController.text.trim(),
-      subtitle: _subtitleController.text.trim(),
-      category: _selectedCategory,
-      waterPercent: _waterPercent,
-      lightPercent: _lightPercent,
-      tempPercent: _tempPercent,
-      airQualityPercent: _airQualityPercent,
-      image: widget.imagePath ?? '',
-      reminderEnabled: _reminderEnabled,
-      reminderTime: _reminderTime,
-      createdAt: DateTime.now(),
-      frequency: _frequency ?? WateringFrequency.every3Days
-      
+  // In lib/presentation/plant_criteria/pages/plant_criteria_page.dart
+
+Future<void> _savePlant() async {
+  final user = FirebaseAuth.instance.currentUser;
+  if (user == null) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Please sign in to save plants'), backgroundColor: Colors.red),
     );
-    if (mounted) {
-      context.read<PlantBloc>().add(AddPlantRequested(plant: plantToSave));
+    return;
+  }
+  
+  if (_nameController.text.trim().isEmpty) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Please enter a plant name'), backgroundColor: Colors.orange),
+    );
+    return;
+  }
+  
+  setState(() => _isSaving = true);
+  
+  // ✅ Calculate nextWatering based on frequency + reminderTime
+  DateTime? calculatedNextWatering;
+  if (_reminderEnabled && _reminderTime != null) {
+    // Start from today at the reminder time
+    calculatedNextWatering = DateTime(
+      DateTime.now().year,
+      DateTime.now().month,
+      DateTime.now().day,
+      _reminderTime!.hour,
+      _reminderTime!.minute,
+    );
+    
+    // If time already passed today, move to tomorrow
+    if (calculatedNextWatering.isBefore(DateTime.now())) {
+      calculatedNextWatering = calculatedNextWatering.add(const Duration(days: 1));
+    }
+    
+    // Apply frequency offset for first watering
+    switch (_frequency) {
+      case WateringFrequency.daily:
+        break; // Already set to tomorrow if needed
+      case WateringFrequency.every2Days:
+        calculatedNextWatering = calculatedNextWatering.add(const Duration(days: 1));
+        break;
+      case WateringFrequency.every3Days:
+        calculatedNextWatering = calculatedNextWatering.add(const Duration(days: 2));
+        break;
+      case WateringFrequency.weekly:
+        calculatedNextWatering = calculatedNextWatering.add(const Duration(days: 6));
+        break;
     }
   }
+  
+  final plantToSave = PlantEntity(
+    id: const Uuid().v4(),
+    userId: user.uid,
+    name: _nameController.text.trim(),
+    subtitle: _subtitleController.text.trim(),
+    category: _selectedCategory,
+    waterPercent: _waterPercent,
+    lightPercent: _lightPercent,
+    tempPercent: _tempPercent,
+    airQualityPercent: _airQualityPercent,
+    image: widget.imagePath ?? '',
+    reminderEnabled: _reminderEnabled,
+    reminderTime: _reminderTime,
+    frequency: _frequency,  // ✅ Make sure you have this state variable
+    nextWatering: calculatedNextWatering,  // ✅ Set it!
+    createdAt: DateTime.now(),
+  );
+  
+  if (mounted) {
+    context.read<PlantBloc>().add(AddPlantRequested(plant: plantToSave));
+  }
+}
 }

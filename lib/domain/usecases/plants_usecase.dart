@@ -35,3 +35,10 @@ class WatchPlantsUseCase {
   Stream<List<PlantEntity>> call({String? category}) =>
       repository.watchPlants(category: category);
 }
+class UpdatePlantUseCase {
+
+final PlantRepository repository;
+  UpdatePlantUseCase(this.repository);
+  
+  Future<void> call(PlantEntity plant) => repository.updatePlant(plant);
+}

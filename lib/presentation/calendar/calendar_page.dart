@@ -1,8 +1,12 @@
 // lib/presentation/calendar/calendar_page.dart
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:table_calendar/table_calendar.dart';
 import 'package:green_guard/core/consts/app_theme.dart';
 import 'package:green_guard/domain/entities/plant_entity.dart';
-import 'package:table_calendar/table_calendar.dart';
+import 'bloc/calendar_bloc.dart';
+import 'bloc/calendar_event.dart';
+import 'bloc/calendar_state.dart';
 
 class CalendarPage extends StatefulWidget {
   const CalendarPage({super.key});
@@ -16,41 +20,30 @@ class _CalendarPageState extends State<CalendarPage> {
   DateTime _focusedDay = DateTime.now();
   CalendarFormat _calendarFormat = CalendarFormat.month;
 
-  final Map<DateTime, List<PlantEntity>> _plantsByDate = {
-    DateTime(2024, 1, 15): [
-      PlantEntity(
-        id: '1',
-        userId: 'user1',
-        name: 'Snake Plant',
-        subtitle: 'Indoor',
-        category: 'Indoor',
-        waterPercent: 45,
-        lightPercent: 75,
-        tempPercent: 22,
-        airQualityPercent: 80,
-        image: '',
-        reminderTime: TimeOfDay(hour: 9, minute: 0),
+  // Cache for schedule to avoid recalculating on every build
+  Map<DateTime, List<PlantEntity>> _schedule = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSchedule();
+  }
+
+  void _loadSchedule() {
+    final firstVisible = _focusedDay.subtract(const Duration(days: 7));
+    final lastVisible = _focusedDay.add(const Duration(days: 42));
+
+    context.read<CalendarBloc>().add(
+      LoadWateringScheduleRequested(
+        startDate: firstVisible,
+        endDate: lastVisible,
       ),
-    ],
-    DateTime(2024, 1, 16): [
-      PlantEntity(
-        id: '2',
-        userId: 'user1',
-        name: 'Monstera',
-        subtitle: 'Tropical',
-        category: 'Indoor',
-        waterPercent: 60,
-        lightPercent: 80,
-        tempPercent: 24,
-        airQualityPercent: 85,
-        image: '',
-        reminderTime: TimeOfDay(hour: 10, minute: 0),
-      ),
-    ],
-  };
+    );
+  }
 
   List<PlantEntity> _getPlantsForDay(DateTime day) {
-    return _plantsByDate[day] ?? [];
+    final normalizedDay = DateTime(day.year, day.month, day.day);
+    return _schedule[normalizedDay] ?? [];
   }
 
   @override
@@ -60,18 +53,29 @@ class _CalendarPageState extends State<CalendarPage> {
       body: SafeArea(
         child: Column(
           children: [
-            // Header
             _buildHeader(),
-            
-            // Calendar
             Expanded(
-              child: SingleChildScrollView(
-                child: Column(
-                  children: [
-                    _buildCalendar(),
-                    _buildTodayTasks(),
-                  ],
-                ),
+              child: BlocConsumer<CalendarBloc, CalendarState>(
+                listener: (context, state) {
+                  if (state is WateringScheduleLoaded) {
+                    setState(() {
+                      _schedule = state.schedule;
+                    });
+                  }
+                  if (state is PlantWatered) {
+                    _loadSchedule();
+                  }
+                },
+                builder: (context, state) {
+                  return SingleChildScrollView(
+                    child: Column(
+                      children: [
+                        _buildCalendar(state),
+                        _buildTodayTasks(state),
+                      ],
+                    ),
+                  );
+                },
               ),
             ),
           ],
@@ -80,9 +84,6 @@ class _CalendarPageState extends State<CalendarPage> {
     );
   }
 
-  // ─────────────────────────────────────────────────────────────
-  // Header
-  // ─────────────────────────────────────────────────────────────
   Widget _buildHeader() {
     return Container(
       padding: const EdgeInsets.all(20),
@@ -97,35 +98,38 @@ class _CalendarPageState extends State<CalendarPage> {
           bottomRight: Radius.circular(32),
         ),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          const Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Calendar',
-                    style: TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.w800,
-                      color: Colors.white,
-                    ),
-                  ),
-                  SizedBox(height: 4),
-                  Text(
-                    'Track your plant care',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.white70,
-                    ),
-                  ),
-                ],
+              Text(
+                'Calendar',
+                style: TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.w800,
+                  color: Colors.white,
+                ),
               ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              SizedBox(height: 4),
+              Text(
+                'Track your plant care',
+                style: TextStyle(fontSize: 14, color: Colors.white70),
+              ),
+            ],
+          ),
+          BlocBuilder<CalendarBloc, CalendarState>(
+            builder: (context, state) {
+              final count = state is WateringScheduleLoaded
+                  ? _getPlantsForDay(DateTime.now()).length
+                  : 0;
+
+              return Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.white.withOpacity(0.2),
                   borderRadius: BorderRadius.circular(20),
@@ -135,9 +139,9 @@ class _CalendarPageState extends State<CalendarPage> {
                   children: [
                     Icon(Icons.water_drop, size: 16, color: Colors.white),
                     const SizedBox(width: 6),
-                    const Text(
-                      '3 due today',
-                      style: TextStyle(
+                    Text(
+                      '$count due today',
+                      style: const TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
                         color: Colors.white,
@@ -145,18 +149,15 @@ class _CalendarPageState extends State<CalendarPage> {
                     ),
                   ],
                 ),
-              ),
-            ],
+              );
+            },
           ),
         ],
       ),
     );
   }
 
-  // ─────────────────────────────────────────────────────────────
-  // Calendar Widget
-  // ─────────────────────────────────────────────────────────────
-  Widget _buildCalendar() {
+  Widget _buildCalendar(CalendarState state) {
     return Container(
       margin: const EdgeInsets.all(20),
       padding: const EdgeInsets.all(20),
@@ -173,79 +174,86 @@ class _CalendarPageState extends State<CalendarPage> {
       ),
       child: Column(
         children: [
-          TableCalendar(
-            firstDay: DateTime.utc(2020, 1, 1),
-            lastDay: DateTime.utc(2030, 12, 31),
-            focusedDay: _focusedDay,
-            selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
-            calendarFormat: _calendarFormat,
-            headerStyle: const HeaderStyle(
-              formatButtonVisible: false,
-              titleCentered: true,
-              titleTextStyle: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-                color: AppTheme.textDark,
+          if (state is CalendarLoading)
+            const Padding(
+              padding: EdgeInsets.all(40),
+              child: CircularProgressIndicator(),
+            )
+          else
+            // Replace TableCalendar widget with this:
+            TableCalendar(
+              firstDay: DateTime.utc(2020, 1, 1),
+              lastDay: DateTime.utc(2030, 12, 31),
+              focusedDay: _focusedDay,
+              selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
+              calendarFormat: _calendarFormat,
+
+              calendarBuilders: CalendarBuilders(
+                defaultBuilder: (context, day, focusedDay) {
+                  return _buildCalendarDay(day);
+                },
+                selectedBuilder: (context, day, focusedDay) {
+                  return _buildCalendarDay(day, isSelected: true);
+                },
+                todayBuilder: (context, day, focusedDay) {
+                  return _buildCalendarDay(day, isToday: true);
+                },
               ),
-              leftChevronIcon: Icon(Icons.chevron_left, color: AppTheme.primary),
-              rightChevronIcon: Icon(Icons.chevron_right, color: AppTheme.primary),
-            ),
-            daysOfWeekStyle: const DaysOfWeekStyle(
-              weekdayStyle: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: AppTheme.textMuted,
+
+              eventLoader: (day) {
+                final key = DateTime(day.year, day.month, day.day);
+                return _schedule[key] ?? [];
+              },
+
+              headerStyle: const HeaderStyle(
+                formatButtonVisible: false,
+                titleCentered: true,
+                titleTextStyle: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: AppTheme.textDark,
+                ),
+                leftChevronIcon: Icon(
+                  Icons.chevron_left,
+                  color: AppTheme.primary,
+                ),
+                rightChevronIcon: Icon(
+                  Icons.chevron_right,
+                  color: AppTheme.primary,
+                ),
               ),
-              weekendStyle: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: Colors.red,
+
+              daysOfWeekStyle: const DaysOfWeekStyle(
+                weekdayStyle: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: AppTheme.textMuted,
+                ),
+                weekendStyle: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.red,
+                ),
               ),
-            ),
-            calendarStyle: CalendarStyle(
-              outsideDaysVisible: false,
-              weekendTextStyle: const TextStyle(
-                color: Colors.red,
-                fontWeight: FontWeight.w600,
-              ),
-              holidayTextStyle: const TextStyle(
-                color: Colors.red,
-                fontWeight: FontWeight.w600,
-              ),
-              selectedDecoration: const BoxDecoration(
-                color: Color(0xFF3A8A1A),
-                shape: BoxShape.circle,
-              ),
-              todayDecoration: BoxDecoration(
-                color: AppTheme.primary.withOpacity(0.1),
-                shape: BoxShape.circle,
-                border: Border.all(color: AppTheme.primary, width: 2),
-              ),
-              markerDecoration: const BoxDecoration(
-                color: Colors.orange,
-                shape: BoxShape.circle,
-              ),
-              markersMaxCount: 3,
-            ),
-            eventLoader: _getPlantsForDay,
-            onDaySelected: (selectedDay, focusedDay) {
-              setState(() {
-                _selectedDay = selectedDay;
+
+              onDaySelected: (selectedDay, focusedDay) {
+                setState(() {
+                  _selectedDay = selectedDay;
+                  _focusedDay = focusedDay;
+                });
+              },
+              onFormatChanged: (format) {
+                setState(() => _calendarFormat = format);
+                _loadSchedule();
+              },
+              onPageChanged: (focusedDay) {
                 _focusedDay = focusedDay;
-              });
-            },
-            onFormatChanged: (format) {
-              setState(() {
-                _calendarFormat = format;
-              });
-            },
-            onPageChanged: (focusedDay) {
-              _focusedDay = focusedDay;
-            },
-          ),
-          
+                _loadSchedule();
+              },
+            ),
+
           const SizedBox(height: 16),
-          
+
           // Legend
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -261,6 +269,109 @@ class _CalendarPageState extends State<CalendarPage> {
       ),
     );
   }
+  // Add this method to _CalendarPageState:
+
+  Widget _buildCalendarDay(
+    DateTime day, {
+    bool isSelected = false,
+    bool isToday = false,
+  }) {
+    final plants = _getPlantsForDay(day);
+
+    // Determine marker color based on plant status
+    Color? markerColor;
+    if (plants.isNotEmpty) {
+      final hasOverdue = plants.any((p) => _isOverdue(p, day));
+      final hasDueToday = plants.any((p) => _isDueToday(p, day));
+      markerColor = hasOverdue
+          ? Colors.red
+          : (hasDueToday ? Colors.orange : AppTheme.primary);
+    }
+
+    return Container(
+      margin: const EdgeInsets.all(2),
+      decoration: BoxDecoration(
+        color: isSelected
+            ? AppTheme.primary
+            : (isToday
+                  ? AppTheme.primary.withOpacity(0.1)
+                  : Colors.transparent),
+        shape: BoxShape.circle,
+        border: isToday && !isSelected
+            ? Border.all(color: AppTheme.primary, width: 2)
+            : null,
+      ),
+      child: GestureDetector(
+        onTap: () {
+          setState(() {
+            _selectedDay = day;
+            _focusedDay = day;
+          });
+        },
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // Day number
+              Text(
+                '${day.day}',
+                style: TextStyle(
+                  color: isSelected
+                      ? Colors.white
+                      : (isToday ? AppTheme.primary : AppTheme.textDark),
+                  fontWeight: isSelected || isToday
+                      ? FontWeight.bold
+                      : FontWeight.normal,
+                  fontSize: 14,
+                ),
+              ),
+
+              // ✅ Dynamic colored marker dot
+              if (markerColor != null) ...[
+                const SizedBox(height: 2),
+                Container(
+                  width: 6,
+                  height: 6,
+                  decoration: BoxDecoration(
+                    color: markerColor,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ✅ Check if plant is overdue for selected day
+  bool _isOverdue(PlantEntity plant, DateTime day) {
+    if (plant.reminderTime == null) return false;
+    final wateringTime = DateTime(
+      day.year,
+      day.month,
+      day.day,
+      plant.reminderTime!.hour,
+      plant.reminderTime!.minute,
+    );
+    return DateTime.now().isAfter(wateringTime) &&
+        !DateUtils.isSameDay(day, DateTime.now());
+  }
+
+  // ✅ Check if plant is due today
+  bool _isDueToday(PlantEntity plant, DateTime day) {
+    if (!DateUtils.isSameDay(day, DateTime.now())) return false;
+    if (plant.reminderTime == null) return false;
+    final wateringTime = DateTime(
+      day.year,
+      day.month,
+      day.day,
+      plant.reminderTime!.hour,
+      plant.reminderTime!.minute,
+    );
+    return DateTime.now().isBefore(wateringTime);
+  }
 
   Widget _buildLegendItem(Color color, String label) {
     return Row(
@@ -268,27 +379,18 @@ class _CalendarPageState extends State<CalendarPage> {
         Container(
           width: 8,
           height: 8,
-          decoration: BoxDecoration(
-            color: color,
-            shape: BoxShape.circle,
-          ),
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
         ),
         const SizedBox(width: 6),
         Text(
           label,
-          style: const TextStyle(
-            fontSize: 12,
-            color: AppTheme.textMuted,
-          ),
+          style: const TextStyle(fontSize: 12, color: AppTheme.textMuted),
         ),
       ],
     );
   }
 
-  // ─────────────────────────────────────────────────────────────
-  // Today's Tasks Section
-  // ─────────────────────────────────────────────────────────────
-  Widget _buildTodayTasks() {
+  Widget _buildTodayTasks(CalendarState state) {
     final todayPlants = _getPlantsForDay(_selectedDay);
     final isToday = DateUtils.isSameDay(_selectedDay, DateTime.now());
 
@@ -313,7 +415,9 @@ class _CalendarPageState extends State<CalendarPage> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                isToday ? "Today's Tasks" : 'Tasks for ${_formatDate(_selectedDay)}',
+                isToday
+                    ? "Today's Tasks"
+                    : 'Tasks for ${_formatDate(_selectedDay)}',
                 style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
@@ -322,7 +426,10 @@ class _CalendarPageState extends State<CalendarPage> {
               ),
               if (todayPlants.isNotEmpty)
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
                     color: AppTheme.primary.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(20),
@@ -339,8 +446,10 @@ class _CalendarPageState extends State<CalendarPage> {
             ],
           ),
           const SizedBox(height: 16),
-          
-          if (todayPlants.isEmpty)
+
+          if (state is CalendarLoading)
+            const Center(child: CircularProgressIndicator())
+          else if (todayPlants.isEmpty)
             _buildEmptyState()
           else
             ListView.separated(
@@ -388,10 +497,7 @@ class _CalendarPageState extends State<CalendarPage> {
           const SizedBox(height: 4),
           Text(
             'No plants need care today 🎉',
-            style: TextStyle(
-              fontSize: 14,
-              color: AppTheme.textMuted,
-            ),
+            style: TextStyle(fontSize: 14, color: AppTheme.textMuted),
           ),
         ],
       ),
@@ -399,9 +505,8 @@ class _CalendarPageState extends State<CalendarPage> {
   }
 
   Widget _buildTaskCard(PlantEntity plant, int index) {
-    final isOverdue = plant.reminderTime != null && 
-        DateTime.now().isAfter(_selectedDay.add(Duration(hours: plant.reminderTime!.hour)));
-    
+    final isOverdue = _isOverdue(plant, _selectedDay);
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -415,21 +520,24 @@ class _CalendarPageState extends State<CalendarPage> {
       child: Row(
         children: [
           // Checkbox
-          Container(
-            width: 24,
-            height: 24,
-            decoration: BoxDecoration(
-              color: isOverdue ? Colors.red : AppTheme.primary,
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(
-              Icons.check,
-              size: 16,
-              color: Colors.white,
+          GestureDetector(
+            onTap: () {
+              context.read<CalendarBloc>().add(
+                MarkPlantWatered(plantId: plant.id, wateredDate: _selectedDay),
+              );
+            },
+            child: Container(
+              width: 24,
+              height: 24,
+              decoration: BoxDecoration(
+                color: isOverdue ? Colors.red : AppTheme.primary,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.check, size: 16, color: Colors.white),
             ),
           ),
           const SizedBox(width: 12),
-          
+
           // Plant info
           Expanded(
             child: Column(
@@ -448,7 +556,10 @@ class _CalendarPageState extends State<CalendarPage> {
                     if (isOverdue) ...[
                       const SizedBox(width: 6),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 2,
+                        ),
                         decoration: BoxDecoration(
                           color: Colors.red,
                           borderRadius: BorderRadius.circular(10),
@@ -478,7 +589,9 @@ class _CalendarPageState extends State<CalendarPage> {
                       'Water • ${plant.reminderTime?.format(context) ?? "Anytime"}',
                       style: TextStyle(
                         fontSize: 12,
-                        color: isOverdue ? Colors.red.shade700 : AppTheme.textMuted,
+                        color: isOverdue
+                            ? Colors.red.shade700
+                            : AppTheme.textMuted,
                       ),
                     ),
                   ],
@@ -486,7 +599,7 @@ class _CalendarPageState extends State<CalendarPage> {
               ],
             ),
           ),
-          
+
           // Action buttons
           Column(
             children: [
@@ -497,17 +610,11 @@ class _CalendarPageState extends State<CalendarPage> {
                   color: isOverdue ? Colors.red : AppTheme.primary,
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(
-                  Icons.check,
-                  size: 18,
-                  color: Colors.white,
-                ),
+                child: const Icon(Icons.check, size: 18, color: Colors.white),
               ),
               const SizedBox(height: 8),
               GestureDetector(
-                onTap: () {
-                  // Show snooze options
-                },
+                onTap: () => _showSnoozeOptions(plant),
                 child: Container(
                   width: 36,
                   height: 36,
@@ -530,10 +637,56 @@ class _CalendarPageState extends State<CalendarPage> {
     );
   }
 
+  void _showSnoozeOptions(PlantEntity plant) {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Snooze reminder for:',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+            ),
+            const SizedBox(height: 16),
+            ListTile(
+              leading: const Icon(Icons.today),
+              title: const Text('Tomorrow'),
+              onTap: () {
+                Navigator.pop(context);
+                // Implement snooze logic here
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.calendar_today),
+              title: const Text('Next week'),
+              onTap: () {
+                Navigator.pop(context);
+                // Implement snooze logic here
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   String _formatDate(DateTime date) {
     const months = [
-      'January', 'February', 'March', 'April', 'May', 'June',
-      'July', 'August', 'September', 'October', 'November', 'December'
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December',
     ];
     return '${months[date.month - 1]} ${date.day}';
   }

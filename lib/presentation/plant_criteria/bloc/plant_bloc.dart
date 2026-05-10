@@ -21,8 +21,6 @@ class PlantBloc extends Bloc<PlantEvent, PlantState> {
     Emitter<PlantState> emit,
   ) async {
     try {
-      // Implement delete use case if needed
-      // For now stream will update automatically if delete works
     } catch (e) {
       emit(PlantError(e.toString()));
     }

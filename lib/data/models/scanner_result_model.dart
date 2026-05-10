@@ -34,6 +34,4 @@ class ScannerResultModel extends ScannerResultEntity {
     );
   }
 
-  @override
-  List<Object?> get props => [imagePath, source, timestamp, originalPath];
 }

@@ -11,11 +11,13 @@ import 'package:green_guard/data/repositories/scanner_repository_impl.dart';
 import 'package:green_guard/domain/repositories/auth_repository.dart';
 import 'package:green_guard/domain/repositories/plant_repository.dart';
 import 'package:green_guard/domain/repositories/scanner_repository.dart';
+import 'package:green_guard/domain/usecases/get_watering_schedule_use_case.dart';
 import 'package:green_guard/domain/usecases/plants_usecase.dart';
 import 'package:green_guard/domain/usecases/request_camera_permission_usecase.dart';
 import 'package:green_guard/domain/usecases/sign_in_usecase.dart';
 import 'package:green_guard/firebase_options.dart';
 import 'package:green_guard/presentation/auth/bloc/auth_bloc.dart';
+import 'package:green_guard/presentation/calendar/bloc/calendar_bloc.dart';
 import 'package:green_guard/presentation/home/bloc/home_bloc.dart';
 import 'package:green_guard/presentation/plant_criteria/bloc/plant_bloc.dart';
 import 'package:green_guard/presentation/scanner/bloc/scanner_bloc.dart';
@@ -67,12 +69,12 @@ Future<void> init() async {
   sl.registerLazySingleton(() => OpenSettingsUseCase(sl()));
   sl.registerLazySingleton(() => DisposeUseCase(sl()));
 
- 
   sl.registerLazySingleton(() => AddPlantUseCase(sl()));
   sl.registerLazySingleton(() => DeletePlantUseCase(sl()));
   sl.registerLazySingleton(() => GetPlantByIdUseCase(sl()));
   sl.registerLazySingleton(() => WatchPlantsUseCase(sl()));
-
+  sl.registerLazySingleton(() => GetWateringScheduleUseCase(sl()));
+  sl.registerLazySingleton(() => UpdatePlantUseCase(sl()));
   // BLoCs (factory = new instance each time)
   sl.registerFactory(
     () => AuthBloc(
@@ -97,5 +99,11 @@ Future<void> init() async {
   );
   sl.registerLazySingleton(
     () => PlantBloc(addPlantUseCase: sl(), watchPlantsUseCase: sl()),
+  );
+  sl.registerFactory(
+    () => CalendarBloc(
+      getWateringScheduleUseCase: sl(),
+      updatePlantUseCase: sl(),
+    ),
   );
 }
